@@ -5,7 +5,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
 
 	"github.com/deelawn/BrainPaaswd/services"
 	"github.com/deelawn/convert"
@@ -17,7 +20,7 @@ type Service struct {
 	services.Service
 }
 
-func (s *Service) readUsersFromFile() ([]User, error) {
+func (s *Service) readUsersFromFile() (map[int64]User, error) {
 
 	// Read the data from the file
 	data, err := ioutil.ReadFile(s.PasswdPath)
@@ -26,7 +29,7 @@ func (s *Service) readUsersFromFile() ([]User, error) {
 		return nil, err
 	}
 
-	results := make([]User, 0)
+	results := make(map[int64]User)
 
 	// Now do the transformation
 	records := strings.Split(string(data), "\n")
@@ -52,7 +55,7 @@ func (s *Service) readUsersFromFile() ([]User, error) {
 			continue
 		}
 
-		gid, gidErr := convert.StringToInt64(fields[2])
+		gid, gidErr := convert.StringToInt64(fields[3])
 		if gidErr != nil {
 			log.Printf("invalid gid %s on line %d\n", fields[3], i+1)
 			continue
@@ -67,13 +70,13 @@ func (s *Service) readUsersFromFile() ([]User, error) {
 			Shell:   fields[6],
 		}
 
-		results = append(results, newUser)
+		results[uid] = newUser
 	}
 
 	return results, nil
 }
 
-func (s *Service) ListUsers(w http.ResponseWriter, r *http.Request) {
+func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 	results, err := s.readUsersFromFile()
@@ -84,11 +87,63 @@ func (s *Service) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respData, err := json.Marshal(results)
+	userList := make([]User, len(results))
+	idx := 0
+	for _, user := range results {
+		userList[idx] = user
+		idx++
+	}
+
+	respData, err := json.Marshal(userList)
 
 	if err != nil {
 		w.Write([]byte(`{"error":"user data error"}`))
 		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	_, err = w.Write(respData)
+
+	if err != nil {
+		w.Write([]byte(`{"error":"unknown user error"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Add("Content-Type", "application/json")
+
+	// Even though using the regex in the router, still need to error check in case of potential overflow
+	uid, err := strconv.ParseInt(mux.Vars(r)["uid"], 10, 0)
+
+	if err != nil {
+		w.Write([]byte(`{"error":"malformed uid"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	results, err := s.readUsersFromFile()
+
+	if err != nil {
+		w.Write([]byte(`{"error":"could not read users"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var foundUser User
+	var exists bool
+
+	if foundUser, exists = results[uid]; !exists {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	respData, err := json.Marshal(&foundUser)
+
+	if err != nil {
+		w.Write([]byte(`{"error":"user data error"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	_, err = w.Write(respData)

@@ -24,7 +24,8 @@ var (
 func main() {
 
 	r := mux.NewRouter()
-	r.HandleFunc("/users", userService.ListUsers)
+	r.HandleFunc("/users", userService.List)
+	r.HandleFunc("/users/{uid:[0-9]+}", userService.Read)
 
 	srv := &http.Server{
 		Handler: r,
