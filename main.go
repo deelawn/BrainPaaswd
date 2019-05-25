@@ -6,22 +6,25 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+
+	"github.com/deelawn/BrainPaaswd/services"
+	"github.com/deelawn/BrainPaaswd/services/users"
 )
 
-func UserService(writer http.ResponseWriter, request *http.Request) {
-
-	writer.Write([]byte("Users response"))
-}
-
 const (
-	passwdPath = "/etc/passwd"
-	groupPath  = "/etc/groups"
+	passwdPath = "passwd"
+	groupPath  = "groups"
+)
+
+var (
+	baseService *services.Service
+	userService *users.Service
 )
 
 func main() {
 
 	r := mux.NewRouter()
-	r.HandleFunc("/users", UserService)
+	r.HandleFunc("/users", userService.ListUsers)
 
 	srv := &http.Server{
 		Handler: r,
@@ -30,4 +33,10 @@ func main() {
 
 	fmt.Println("Server started!")
 	log.Fatal(srv.ListenAndServe())
+}
+
+func init() {
+
+	baseService = services.NewService(passwdPath, groupPath)
+	userService = users.NewService(*baseService)
 }

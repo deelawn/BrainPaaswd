@@ -58,9 +58,9 @@ func parseResponse(data []byte, target interface{}) {
 
 func TestListUsers(t *testing.T) {
 
-	data := getTestResponse(http.MethodGet, "users", UserService)
+	data := getTestResponse(http.MethodGet, "users", userService.ListUsers)
 	userList := make([]users.User, 0)
 	parseResponse(data, &userList)
 
-	assert.Equal(t, "Users response", string(data))
+	assert.Len(t, userList, 14)
 }
