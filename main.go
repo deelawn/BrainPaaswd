@@ -8,15 +8,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func UsersService(writer http.ResponseWriter, request *http.Request) {
+func UserService(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Write([]byte("Users response"))
 }
 
+const (
+	passwdPath = "/etc/passwd"
+	groupPath  = "/etc/groups"
+)
+
 func main() {
 
 	r := mux.NewRouter()
-	r.HandleFunc("/users", UsersService)
+	r.HandleFunc("/users", UserService)
 
 	srv := &http.Server{
 		Handler: r,
