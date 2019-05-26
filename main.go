@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 
+	"github.com/deelawn/BrainPaaswd/readers"
 	"github.com/deelawn/BrainPaaswd/readers/file"
 	"github.com/deelawn/BrainPaaswd/services"
 	"github.com/deelawn/BrainPaaswd/services/users"
@@ -41,7 +41,7 @@ func main() {
 func init() {
 
 	// Initialize readers to read data from sources; in our case we are reading from files
-	readers := map[string]func(source string) io.Reader{
+	readers := map[string]func(source string) readers.Resource{
 		passwdPath: file.NewReader,
 		groupPath:  file.NewReader,
 	}

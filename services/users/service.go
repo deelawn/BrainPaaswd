@@ -1,15 +1,11 @@
 package users
 
 import (
-	"encoding/json"
 	"log"
-	"net/http"
-	"strconv"
 	"strings"
 
-	"github.com/gorilla/mux"
-
 	"github.com/deelawn/BrainPaaswd/services"
+	"github.com/deelawn/BrainPaaswd/storage"
 	"github.com/deelawn/convert"
 )
 
@@ -19,16 +15,17 @@ type Service struct {
 	services.Service
 }
 
-func (s *Service) readUsers() (map[int64]User, error) {
+func (s *Service) readFromSource(cache storage.Cache) (map[interface{}]interface{}, error) {
 
 	// Read the data from the data source
-	data, err := s.ReadData(s.PasswdPath)
+	data, err := s.ReadData(s.UserSource())
 
 	if err != nil {
 		return nil, err
 	}
 
-	results := make(map[int64]User)
+	results := make(map[interface{}]interface{})
+	userList := make([]User, 0)
 
 	// Now do the transformation
 	records := strings.Split(string(data), "\n")
@@ -70,87 +67,15 @@ func (s *Service) readUsers() (map[int64]User, error) {
 		}
 
 		results[uid] = newUser
+		userList = append(userList, newUser)
+	}
+
+	// If this function is being executed, it means that the cache needs to updated
+	if cache != nil {
+		cache.SetData(userList, results)
 	}
 
 	return results, nil
-}
-
-func (s *Service) List(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Add("Content-Type", "application/json")
-	results, err := s.readUsers()
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"could not read users"}`))
-		return
-	}
-
-	userList := make([]User, len(results))
-	idx := 0
-	for _, user := range results {
-		userList[idx] = user
-		idx++
-	}
-
-	respData, err := json.Marshal(userList)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"user data error"}`))
-	}
-
-	_, err = w.Write(respData)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"unknown user error"}`))
-	}
-}
-
-func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Add("Content-Type", "application/json")
-
-	// Even though using the regex in the router, still need to error check in case of potential overflow
-	uid, err := strconv.ParseInt(mux.Vars(r)["uid"], 10, 0)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"malformed uid"}`))
-		return
-	}
-
-	results, err := s.readUsers()
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"could not read users"}`))
-		return
-	}
-
-	var foundUser User
-	var exists bool
-
-	if foundUser, exists = results[uid]; !exists {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	respData, err := json.Marshal(&foundUser)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"user data error"}`))
-		return
-	}
-
-	_, err = w.Write(respData)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"unknown user error"}`))
-	}
 }
 
 func NewService(service services.Service) *Service {

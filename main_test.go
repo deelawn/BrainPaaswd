@@ -104,5 +104,5 @@ func TestReadUserNonexistent(t *testing.T) {
 	data, status := getTestResponse(http.MethodGet, "users/75", testUserService.Read, map[string]string{"uid": "75"})
 
 	assert.EqualValues(t, http.StatusNotFound, status)
-	assert.Empty(t, data)
+	assert.EqualValues(t, `{"error":"could not read users"}`, string(data))
 }
