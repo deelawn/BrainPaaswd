@@ -2,7 +2,6 @@ package users
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -20,10 +19,10 @@ type Service struct {
 	services.Service
 }
 
-func (s *Service) readUsersFromFile() (map[int64]User, error) {
+func (s *Service) readUsers() (map[int64]User, error) {
 
-	// Read the data from the file
-	data, err := ioutil.ReadFile(s.PasswdPath)
+	// Read the data from the data source
+	data, err := s.ReadData(s.PasswdPath)
 
 	if err != nil {
 		return nil, err
@@ -79,11 +78,11 @@ func (s *Service) readUsersFromFile() (map[int64]User, error) {
 func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
-	results, err := s.readUsersFromFile()
+	results, err := s.readUsers()
 
 	if err != nil {
-		w.Write([]byte(`{"error":"could not read users"}`))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"could not read users"}`))
 		return
 	}
 
@@ -97,15 +96,15 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	respData, err := json.Marshal(userList)
 
 	if err != nil {
-		w.Write([]byte(`{"error":"user data error"}`))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"user data error"}`))
 	}
 
 	_, err = w.Write(respData)
 
 	if err != nil {
-		w.Write([]byte(`{"error":"unknown user error"}`))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"unknown user error"}`))
 	}
 }
 
@@ -117,16 +116,16 @@ func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
 	uid, err := strconv.ParseInt(mux.Vars(r)["uid"], 10, 0)
 
 	if err != nil {
-		w.Write([]byte(`{"error":"malformed uid"}`))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"malformed uid"}`))
 		return
 	}
 
-	results, err := s.readUsersFromFile()
+	results, err := s.readUsers()
 
 	if err != nil {
-		w.Write([]byte(`{"error":"could not read users"}`))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"could not read users"}`))
 		return
 	}
 
@@ -141,16 +140,16 @@ func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
 	respData, err := json.Marshal(&foundUser)
 
 	if err != nil {
-		w.Write([]byte(`{"error":"user data error"}`))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"user data error"}`))
 		return
 	}
 
 	_, err = w.Write(respData)
 
 	if err != nil {
-		w.Write([]byte(`{"error":"unknown user error"}`))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"unknown user error"}`))
 	}
 }
 
