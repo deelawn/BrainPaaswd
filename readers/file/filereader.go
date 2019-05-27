@@ -2,7 +2,6 @@ package file
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -12,28 +11,28 @@ import (
 // Reader is a file reader that implements io.Reader
 type Reader struct {
 	source string
+	fd     *os.File
 	done   bool
 }
 
 // Read reads data from a file source and indicates when the reading has completed
 func (r *Reader) Read(p []byte) (n int, err error) {
 
-	if r.done {
-		return 0, io.EOF
+	// Open the file if it is the first iteration of calling Read
+	if r.fd == nil {
+		r.fd, err = os.Open(r.source)
+
+		if err != nil {
+			return 0, err
+		}
 	}
 
-	data, err := ioutil.ReadFile(r.source)
-	n = len(p)
+	n, err = r.fd.Read(p)
 
-	if err != nil {
-		return n, err
+	if n == 0 && err == io.EOF {
+		_ = r.fd.Close()
 	}
 
-	for i, b := range data {
-		p[i] = b
-	}
-
-	r.done = true
 	return
 }
 

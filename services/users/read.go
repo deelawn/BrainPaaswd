@@ -26,7 +26,7 @@ func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(statusCode)
-		w.Write([]byte(`{"error":"could not read users"}`))
+		w.Write([]byte(`{"error":"could not read user"}`))
 		return
 	}
 

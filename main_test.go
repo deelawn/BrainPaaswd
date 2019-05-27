@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/deelawn/BrainPaaswd/services/groups"
 	"github.com/deelawn/BrainPaaswd/services/users"
 )
 
@@ -62,11 +63,18 @@ func initUserService() *users.Service {
 	return users.NewService(*baseService)
 }
 
+func initGroupService() *groups.Service {
+
+	return groups.NewService(*baseService)
+}
+
 /****************************
 *
 * Tests begin here
 *
 ****************************/
+
+// Begin user tests
 
 func TestListUsers(t *testing.T) {
 
@@ -77,7 +85,7 @@ func TestListUsers(t *testing.T) {
 	parseResponse(data, &userList)
 
 	assert.EqualValues(t, http.StatusOK, status)
-	assert.Len(t, userList, 14)
+	assert.Len(t, userList, 98)
 }
 
 func TestReadUser(t *testing.T) {
@@ -85,24 +93,65 @@ func TestReadUser(t *testing.T) {
 	testUserService := initUserService()
 
 	var user users.User
-	data, status := getTestResponse(http.MethodGet, "users/6", testUserService.Read, map[string]string{"uid": "6"})
+	data, status := getTestResponse(http.MethodGet, "users/1", testUserService.Read, map[string]string{"uid": "1"})
 	parseResponse(data, &user)
 
 	assert.EqualValues(t, http.StatusOK, status)
-	assert.EqualValues(t, "nuucp", user.Name)
-	assert.EqualValues(t, 6, user.UID)
-	assert.EqualValues(t, 5, user.GID)
-	assert.EqualValues(t, "uucp login user", user.Comment)
-	assert.EqualValues(t, "/var/spool/uucppublic", user.Home)
-	assert.EqualValues(t, "/usr/sbin/uucp/uucico", user.Shell)
+	assert.EqualValues(t, "daemon", user.Name)
+	assert.EqualValues(t, 1, user.UID)
+	assert.EqualValues(t, 1, user.GID)
+	assert.EqualValues(t, "System Services", user.Comment)
+	assert.EqualValues(t, "/var/root", user.Home)
+	assert.EqualValues(t, "/usr/bin/false", user.Shell)
 }
 
 func TestReadUserNonexistent(t *testing.T) {
 
 	testUserService := initUserService()
 
-	data, status := getTestResponse(http.MethodGet, "users/75", testUserService.Read, map[string]string{"uid": "75"})
+	data, status := getTestResponse(http.MethodGet, "users/1000", testUserService.Read, map[string]string{"uid": "1000"})
 
 	assert.EqualValues(t, http.StatusNotFound, status)
-	assert.EqualValues(t, `{"error":"could not read users"}`, string(data))
+	assert.EqualValues(t, `{"error":"could not read user"}`, string(data))
 }
+
+// End user tests
+
+// Begin group tests
+func TestListGroups(t *testing.T) {
+
+	testGroupService := initGroupService()
+
+	groupList := make([]groups.Group, 0)
+	data, status := getTestResponse(http.MethodGet, "groups", testGroupService.List, nil)
+	parseResponse(data, &groupList)
+
+	assert.EqualValues(t, http.StatusOK, status)
+	assert.Len(t, groupList, 125)
+}
+
+func TestReadGroup(t *testing.T) {
+
+	testGroupService := initGroupService()
+
+	var group groups.Group
+	data, status := getTestResponse(http.MethodGet, "groups/29", testGroupService.Read, map[string]string{"gid": "29"})
+	parseResponse(data, &group)
+
+	assert.EqualValues(t, http.StatusOK, status)
+	assert.EqualValues(t, "certusers", group.Name)
+	assert.EqualValues(t, 29, group.GID)
+	assert.Len(t, group.Members, 6)
+	assert.EqualValues(t, "root", group.Members[0])
+}
+
+func TestReadGroupNonExistent(t *testing.T) {
+
+	testGroupService := initGroupService()
+	data, status := getTestResponse(http.MethodGet, "groups/29", testGroupService.Read, map[string]string{"gid": "9999"})
+	
+	assert.EqualValues(t, http.StatusNotFound, status)
+	assert.EqualValues(t, `{"error":"could not read group"}`, string(data))
+}
+
+// End group tests

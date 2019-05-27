@@ -1,4 +1,4 @@
-package users
+package groups
 
 import (
 	"log"
@@ -9,7 +9,7 @@ import (
 	"github.com/deelawn/convert"
 )
 
-const numRecordFields = 7
+const numRecordFields = 4
 
 type Service struct {
 	services.Service
@@ -18,14 +18,14 @@ type Service struct {
 func (s *Service) readFromSource(cache storage.Cache) (map[interface{}]interface{}, error) {
 
 	// Read the data from the data source
-	data, err := s.ReadData(s.UserSource())
+	data, err := s.ReadData(s.GroupSource())
 
 	if err != nil {
 		return nil, err
 	}
 
 	results := make(map[interface{}]interface{})
-	userList := make([]User, 0)
+	groupList := make([]Group, 0)
 
 	// Now do the transformation
 	records := strings.Split(string(data), "\n")
@@ -47,38 +47,30 @@ func (s *Service) readFromSource(cache storage.Cache) (map[interface{}]interface
 
 		// Check that it is valid
 		if len(fields) != numRecordFields {
-			log.Printf("user record on line %d is malformed: %s\n", i+1, record)
+			log.Printf("group record on line %d is malformed: %s\n", i+1, record)
 			continue
 		}
 
-		uid, uidErr := convert.StringToInt64(fields[2])
-		if uidErr != nil {
-			log.Printf("invalid uid %s on line %d\n", fields[2], i+1)
-			continue
-		}
+		gid, gidErr := convert.StringToInt64(fields[2])
 
-		gid, gidErr := convert.StringToInt64(fields[3])
 		if gidErr != nil {
-			log.Printf("invalid gid %s on line %d\n", fields[3], i+1)
+			log.Printf("invalid gid %s on line %d: %s\n", fields[2], i+1, gidErr.Error())
 			continue
 		}
 
-		newUser := User{
+		newGroup := Group{
 			Name:    fields[0],
-			UID:     uid,
 			GID:     gid,
-			Comment: fields[4],
-			Home:    fields[5],
-			Shell:   fields[6],
+			Members: strings.Split(fields[3], ","),
 		}
 
-		results[uid] = newUser
-		userList = append(userList, newUser)
+		results[gid] = newGroup
+		groupList = append(groupList, newGroup)
 	}
 
 	// If this function is being executed, it means that the cache needs to updated
 	if cache != nil {
-		cache.SetData(userList, results)
+		cache.SetData(groupList, results)
 	}
 
 	return results, nil
