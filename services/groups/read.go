@@ -67,14 +67,14 @@ func (s *Service) getGroup(gid int64) (models.Group, error, int) {
 	}
 
 	// If it made it this far, then cached data can't be used
-	indexedGroups, err := s.readFromSource(cache)
+	_, indexedGroups, err := s.readFromSource(cache)
 
 	if err != nil {
 		return group, err, http.StatusInternalServerError
 	}
 
 	var exists bool
-	if group, exists = indexedGroups[gid].(models.Group); !exists {
+	if group, exists = indexedGroups[gid]; !exists {
 		return group, errors.New("user not found"), http.StatusNotFound
 	}
 

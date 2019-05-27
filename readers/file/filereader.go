@@ -12,7 +12,6 @@ import (
 type Reader struct {
 	source string
 	fd     *os.File
-	done   bool
 }
 
 // Read reads data from a file source and indicates when the reading has completed

@@ -51,17 +51,10 @@ func (s *Service) getUsers() ([]models.User, error, int) {
 	}
 
 	// If it made it this far, then cached data can't be used
-	indexedUsers, err := s.readFromSource(cache)
+	userList, _, err = s.readFromSource(cache)
 
 	if err != nil {
 		return nil, err, http.StatusInternalServerError
-	}
-
-	userList = make([]models.User, len(indexedUsers))
-	idx := 0
-	for _, user := range indexedUsers {
-		userList[idx] = user.(models.User)
-		idx++
 	}
 
 	return userList, nil, http.StatusOK

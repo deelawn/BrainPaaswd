@@ -66,14 +66,14 @@ func (s *Service) getUser(uid int64) (models.User, error, int) {
 	}
 
 	// If it made it this far, then cached data can't be used
-	indexedUsers, err := s.readFromSource(cache)
+	_, indexedUsers, err := s.readFromSource(cache)
 
 	if err != nil {
 		return user, err, http.StatusInternalServerError
 	}
 
 	var exists bool
-	if user, exists = indexedUsers[uid].(models.User); !exists {
+	if user, exists = indexedUsers[uid]; !exists {
 		return user, errors.New("user not found"), http.StatusNotFound
 	}
 

@@ -17,16 +17,17 @@ type Service struct {
 	services.Service
 }
 
-func (s *Service) readFromSource(cache storage.Cache) (map[interface{}]interface{}, error) {
+func (s *Service) readFromSource(cache storage.Cache) ([]models.Group, map[int64]models.Group, error) {
 
 	// Read the data from the data source
 	data, err := s.ReadData(s.GroupSource())
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	results := make(map[interface{}]interface{})
+	groupMap := make(map[int64]models.Group)
 	groupList := make([]models.Group, 0)
 
 	// Now do the transformation
@@ -75,7 +76,11 @@ func (s *Service) readFromSource(cache storage.Cache) (map[interface{}]interface
 		cache.SetData(groupList, results)
 	}
 
-	return results, nil
+	for k, v := range results {
+		groupMap[k.(int64)] = v.(models.Group)
+	}
+
+	return groupList, groupMap, nil
 }
 
 func NewService(service services.Service) *Service {

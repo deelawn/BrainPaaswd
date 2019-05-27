@@ -51,17 +51,10 @@ func (s *Service) getGroups() ([]models.Group, error, int) {
 	}
 
 	// If it made it this far, then cached data can't be used
-	indexedGroups, err := s.readFromSource(cache)
+	groupList, _, err = s.readFromSource(cache)
 
 	if err != nil {
 		return nil, err, http.StatusInternalServerError
-	}
-
-	groupList = make([]models.Group, len(indexedGroups))
-	idx := 0
-	for _, group := range indexedGroups {
-		groupList[idx] = group.(models.Group)
-		idx++
 	}
 
 	return groupList, nil, http.StatusOK
