@@ -3,6 +3,8 @@ package users
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/deelawn/BrainPaaswd/models"
 )
 
 func (s *Service) List(w http.ResponseWriter, r *http.Request) {
@@ -31,9 +33,9 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Service) getUsers() ([]User, error, int) {
+func (s *Service) getUsers() ([]models.User, error, int) {
 
-	var userList []User
+	var userList []models.User
 
 	cache, err := s.GetCache(s.UserSource())
 
@@ -42,7 +44,7 @@ func (s *Service) getUsers() ([]User, error, int) {
 
 		if cacheErr == nil {
 			var ok bool
-			if userList, ok = data.([]User); ok {
+			if userList, ok = data.([]models.User); ok {
 				return userList, nil, http.StatusOK
 			}
 		}
@@ -55,10 +57,10 @@ func (s *Service) getUsers() ([]User, error, int) {
 		return nil, err, http.StatusInternalServerError
 	}
 
-	userList = make([]User, len(indexedUsers))
+	userList = make([]models.User, len(indexedUsers))
 	idx := 0
 	for _, user := range indexedUsers {
-		userList[idx] = user.(User)
+		userList[idx] = user.(models.User)
 		idx++
 	}
 

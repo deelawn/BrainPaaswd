@@ -4,9 +4,11 @@ import (
 	"log"
 	"strings"
 
+	"github.com/deelawn/convert"
+
+	"github.com/deelawn/BrainPaaswd/models"
 	"github.com/deelawn/BrainPaaswd/services"
 	"github.com/deelawn/BrainPaaswd/storage"
-	"github.com/deelawn/convert"
 )
 
 const numRecordFields = 4
@@ -25,7 +27,7 @@ func (s *Service) readFromSource(cache storage.Cache) (map[interface{}]interface
 	}
 
 	results := make(map[interface{}]interface{})
-	groupList := make([]Group, 0)
+	groupList := make([]models.Group, 0)
 
 	// Now do the transformation
 	records := strings.Split(string(data), "\n")
@@ -58,7 +60,7 @@ func (s *Service) readFromSource(cache storage.Cache) (map[interface{}]interface
 			continue
 		}
 
-		newGroup := Group{
+		newGroup := models.Group{
 			Name:    fields[0],
 			GID:     gid,
 			Members: strings.Split(fields[3], ","),

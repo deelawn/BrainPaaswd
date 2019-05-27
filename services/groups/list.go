@@ -3,6 +3,8 @@ package groups
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/deelawn/BrainPaaswd/models"
 )
 
 func (s *Service) List(w http.ResponseWriter, r *http.Request) {
@@ -31,9 +33,9 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Service) getGroups() ([]Group, error, int) {
+func (s *Service) getGroups() ([]models.Group, error, int) {
 
-	var groupList []Group
+	var groupList []models.Group
 
 	cache, err := s.GetCache(s.GroupSource())
 
@@ -42,7 +44,7 @@ func (s *Service) getGroups() ([]Group, error, int) {
 
 		if cacheErr == nil {
 			var ok bool
-			if groupList, ok = data.([]Group); ok {
+			if groupList, ok = data.([]models.Group); ok {
 				return groupList, nil, http.StatusOK
 			}
 		}
@@ -55,10 +57,10 @@ func (s *Service) getGroups() ([]Group, error, int) {
 		return nil, err, http.StatusInternalServerError
 	}
 
-	groupList = make([]Group, len(indexedGroups))
+	groupList = make([]models.Group, len(indexedGroups))
 	idx := 0
 	for _, group := range indexedGroups {
-		groupList[idx] = group.(Group)
+		groupList[idx] = group.(models.Group)
 		idx++
 	}
 

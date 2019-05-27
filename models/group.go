@@ -1,4 +1,4 @@
-package groups
+package models
 
 // Group is a representation of a user as stored in a /etc/group file
 type Group struct {

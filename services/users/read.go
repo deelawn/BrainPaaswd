@@ -7,6 +7,8 @@ import (
 
 	"github.com/deelawn/convert"
 	"github.com/gorilla/mux"
+
+	"github.com/deelawn/BrainPaaswd/models"
 )
 
 func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
@@ -46,9 +48,9 @@ func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Service) getUser(uid int64) (User, error, int) {
+func (s *Service) getUser(uid int64) (models.User, error, int) {
 
-	var user User
+	var user models.User
 
 	cache, err := s.GetCache(s.UserSource())
 
@@ -57,7 +59,7 @@ func (s *Service) getUser(uid int64) (User, error, int) {
 
 		if cacheErr == nil {
 			var ok bool
-			if user, ok = data.(User); ok {
+			if user, ok = data.(models.User); ok {
 				return user, nil, http.StatusOK
 			}
 		}
@@ -71,7 +73,7 @@ func (s *Service) getUser(uid int64) (User, error, int) {
 	}
 
 	var exists bool
-	if user, exists = indexedUsers[uid].(User); !exists {
+	if user, exists = indexedUsers[uid].(models.User); !exists {
 		return user, errors.New("user not found"), http.StatusNotFound
 	}
 

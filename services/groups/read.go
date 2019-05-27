@@ -7,6 +7,8 @@ import (
 
 	"github.com/deelawn/convert"
 	"github.com/gorilla/mux"
+
+	"github.com/deelawn/BrainPaaswd/models"
 )
 
 func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
@@ -47,9 +49,9 @@ func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Service) getGroup(gid int64) (Group, error, int) {
+func (s *Service) getGroup(gid int64) (models.Group, error, int) {
 
-	var group Group
+	var group models.Group
 
 	cache, err := s.GetCache(s.GroupSource())
 
@@ -58,7 +60,7 @@ func (s *Service) getGroup(gid int64) (Group, error, int) {
 
 		if cacheErr == nil {
 			var ok bool
-			if group, ok = data.(Group); ok {
+			if group, ok = data.(models.Group); ok {
 				return group, nil, http.StatusOK
 			}
 		}
@@ -72,7 +74,7 @@ func (s *Service) getGroup(gid int64) (Group, error, int) {
 	}
 
 	var exists bool
-	if group, exists = indexedGroups[gid].(Group); !exists {
+	if group, exists = indexedGroups[gid].(models.Group); !exists {
 		return group, errors.New("user not found"), http.StatusNotFound
 	}
 

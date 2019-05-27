@@ -1,4 +1,4 @@
-package users
+package models
 
 // User is a representation of a user as stored in a /etc/passwd file
 type User struct {

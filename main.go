@@ -28,8 +28,13 @@ var (
 func main() {
 
 	r := mux.NewRouter()
+	
+	// users service
 	r.HandleFunc("/users", userService.List)
 	r.HandleFunc("/users/{uid:[0-9]+}", userService.Read)
+	// r.HandleFunc("/users/{uid:[0-9]+}/groups", userService.ListGroups)
+
+	// groups service
 	r.HandleFunc("/groups", groupService.List)
 	r.HandleFunc("/groups/{gid:[0-9]+}", groupService.Read)
 

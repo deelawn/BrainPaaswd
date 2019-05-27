@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/deelawn/BrainPaaswd/models"
 	"github.com/deelawn/BrainPaaswd/services/groups"
 	"github.com/deelawn/BrainPaaswd/services/users"
 )
@@ -80,7 +81,7 @@ func TestListUsers(t *testing.T) {
 
 	testUserService := initUserService()
 
-	userList := make([]users.User, 0)
+	userList := make([]models.User, 0)
 	data, status := getTestResponse(http.MethodGet, "users", testUserService.List, nil)
 	parseResponse(data, &userList)
 
@@ -92,7 +93,7 @@ func TestReadUser(t *testing.T) {
 
 	testUserService := initUserService()
 
-	var user users.User
+	var user models.User
 	data, status := getTestResponse(http.MethodGet, "users/1", testUserService.Read, map[string]string{"uid": "1"})
 	parseResponse(data, &user)
 
@@ -122,7 +123,7 @@ func TestListGroups(t *testing.T) {
 
 	testGroupService := initGroupService()
 
-	groupList := make([]groups.Group, 0)
+	groupList := make([]models.Group, 0)
 	data, status := getTestResponse(http.MethodGet, "groups", testGroupService.List, nil)
 	parseResponse(data, &groupList)
 
@@ -134,7 +135,7 @@ func TestReadGroup(t *testing.T) {
 
 	testGroupService := initGroupService()
 
-	var group groups.Group
+	var group models.Group
 	data, status := getTestResponse(http.MethodGet, "groups/29", testGroupService.Read, map[string]string{"gid": "29"})
 	parseResponse(data, &group)
 
