@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Cache defines the interface for... cache
+// Cache defines the interface any cache like mechanism
 type Cache interface {
 	Data() (interface{}, error)
 	IndexedData(key interface{}) (interface{}, error)

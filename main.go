@@ -7,16 +7,17 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/deelawn/BrainPaaswd/readers"
 	"github.com/deelawn/BrainPaaswd/readers/file"
 	"github.com/deelawn/BrainPaaswd/services"
 	"github.com/deelawn/BrainPaaswd/services/groups"
 	"github.com/deelawn/BrainPaaswd/services/users"
+	"github.com/deelawn/BrainPaaswd/storage"
 )
 
 const (
 	passwdPath = "passwd"
 	groupPath  = "group"
+	port       = ":8000"
 )
 
 var (
@@ -29,20 +30,20 @@ func main() {
 
 	r := mux.NewRouter()
 
-	// users service
+	// Users service
 	r.HandleFunc("/users", userService.List)
 	r.HandleFunc("/users/{uid:[0-9]+}", userService.Read)
 	r.HandleFunc("/users/{uid:[0-9]+}/groups", userService.Groups)
 	r.HandleFunc("/users/query", userService.List)
 
-	// groups service
+	// Groups service
 	r.HandleFunc("/groups", groupService.List)
 	r.HandleFunc("/groups/{gid:[0-9]+}", groupService.Read)
 	r.HandleFunc("/groups/query", groupService.List)
 
 	srv := &http.Server{
 		Handler: r,
-		Addr:    ":8000",
+		Addr:    port,
 	}
 
 	fmt.Println("Server started!")
@@ -51,13 +52,7 @@ func main() {
 
 func init() {
 
-	// Initialize readers to read data from sources; in our case we are reading from files
-	readers := map[string]func(source string) readers.Resource{
-		passwdPath: file.NewReader,
-		groupPath:  file.NewReader,
-	}
-
-	baseService = services.NewService(passwdPath, groupPath, readers)
-	groupService = groups.NewService(*baseService)
-	userService = users.NewService(*baseService)
+	baseService = services.NewService()
+	groupService = groups.NewService(*baseService, groupPath, storage.NewLocalCache(), file.NewReader)
+	userService = users.NewService(*baseService, passwdPath, storage.NewLocalCache(), file.NewReader)
 }

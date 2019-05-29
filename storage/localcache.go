@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// LocalCache is a storage mechanism that is thread safe
+// LocalCache is a local storage mechanism that is thread safe
 type LocalCache struct {
 	mtx         *sync.RWMutex
 	data        interface{}

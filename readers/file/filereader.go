@@ -26,8 +26,10 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 		}
 	}
 
+	// Read from the file
 	n, err = r.fd.Read(p)
 
+	// Everything has been read; close the file
 	if n == 0 && err == io.EOF {
 		_ = r.fd.Close()
 	}
@@ -48,7 +50,7 @@ func (r *Reader) GetModifiedTime() (time.Time, error) {
 }
 
 // NewReader returns a new instance of Reader using the provided source identifier
-func NewReader(source string) readers.Resource {
+func NewReader(source string) readers.Reader {
 
 	return &Reader{source: source}
 }

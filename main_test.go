@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/deelawn/BrainPaaswd/models"
+	"github.com/deelawn/BrainPaaswd/readers/file"
 	"github.com/deelawn/BrainPaaswd/services/groups"
 	"github.com/deelawn/BrainPaaswd/services/users"
+	"github.com/deelawn/BrainPaaswd/storage"
 )
 
 const url = "http://localhost"
@@ -61,12 +63,12 @@ func parseResponse(data []byte, target interface{}) {
 
 func initUserService() *users.Service {
 
-	return users.NewService(*baseService)
+	return users.NewService(*baseService, "passwd", storage.NewLocalCache(), file.NewReader)
 }
 
 func initGroupService() *groups.Service {
 
-	return groups.NewService(*baseService)
+	return groups.NewService(*baseService, "group", storage.NewLocalCache(), file.NewReader)
 }
 
 /****************************
@@ -150,7 +152,7 @@ func TestReadGroupNonExistent(t *testing.T) {
 
 	testGroupService := initGroupService()
 	data, status := getTestResponse(http.MethodGet, "groups/29", testGroupService.Read, map[string]string{"gid": "9999"})
-	
+
 	assert.EqualValues(t, http.StatusNotFound, status)
 	assert.EqualValues(t, `{"error":"could not read group"}`, string(data))
 }

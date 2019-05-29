@@ -10,6 +10,7 @@ import (
 
 const groupsQuery = "http://localhost:8000/groups/query?member="
 
+// Group returns all groups that a user belongs to
 func (s *Service) Groups(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
@@ -22,6 +23,7 @@ func (s *Service) Groups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get the user so that the name can be provided to the groups query
 	foundUser, err, statusCode := s.getUser(uid)
 
 	if err != nil {
@@ -41,6 +43,7 @@ func (s *Service) Groups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defer resp.Body.Close()
 	groups, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
@@ -49,5 +52,6 @@ func (s *Service) Groups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// groups is already []byte type, so no need to Unmarshal and Marshal the response from the groups service
 	w.Write(groups)
 }

@@ -15,6 +15,8 @@ import (
 func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
+
+	// Retrieve the full list of users
 	groupList, err, statusCode := s.getGroups()
 
 	if err != nil {
@@ -37,6 +39,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Convert the list of groups to byte data
 	respData, err := json.Marshal(groupList)
 
 	if err != nil {
@@ -44,6 +47,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"error":"group data error"}`))
 	}
 
+	// Write the response; no need to write the response code as 200 is the default
 	_, err = w.Write(respData)
 
 	if err != nil {
@@ -52,14 +56,19 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// getGroups returns a full list of groups
 func (s *Service) getGroups() ([]models.Group, error, int) {
 
 	var groupList []models.Group
 
-	cache, err := s.GetCache(s.GroupSource())
+	// Build the reader that points to the data source
+	reader := s.readerBuilder(s.source)
 
-	if err == nil {
-		data, cacheErr := cache.Data()
+	// Check if the cache is stale
+	if !s.CacheIsStale(s.source, s.cache, reader) {
+
+		// If it isn't stale, then retrieve the cached user data
+		data, cacheErr := s.cache.Data()
 
 		if cacheErr == nil {
 			var ok bool
@@ -70,7 +79,7 @@ func (s *Service) getGroups() ([]models.Group, error, int) {
 	}
 
 	// If it made it this far, then cached data can't be used
-	groupList, _, err = s.readFromSource(cache)
+	groupList, _, err := s.readFromSource(s.cache, reader)
 
 	if err != nil {
 		return nil, err, http.StatusInternalServerError
@@ -79,6 +88,7 @@ func (s *Service) getGroups() ([]models.Group, error, int) {
 	return groupList, nil, http.StatusOK
 }
 
+// filter takes a list of groups and query parameters and returns the filtered list
 func (s *Service) filter(groupList []models.Group, params url.Values) ([]models.Group, error) {
 
 	filteredList := make([]models.Group, 0)
@@ -88,6 +98,7 @@ func (s *Service) filter(groupList []models.Group, params url.Values) ([]models.
 		gid, err := convert.StringToInt64(gidStr[0])
 
 		if err == nil {
+			// Retrieve the group using the provided GID
 			group, err, statusCode := s.getGroup(gid)
 
 			// Return empty list if no matching gid is found
@@ -97,6 +108,7 @@ func (s *Service) filter(groupList []models.Group, params url.Values) ([]models.
 				return nil, err
 			}
 
+			// If found by GID, this is the only group in the result list; no more can be added but this could be removed
 			filteredList = append(filteredList, group)
 		}
 	} else {
@@ -104,7 +116,11 @@ func (s *Service) filter(groupList []models.Group, params url.Values) ([]models.
 		filteredList = append(filteredList, groupList...)
 	}
 
-	// Now check for the rest of the query parameters
+	/*
+		Now check for the rest of the query parameters. Each of the loops below will filter each parameter
+		sequentially and remove items that do not match the provided parameter
+	*/
+
 	if name, exists := params["name"]; exists {
 		for i := 0; i < len(filteredList); i++ {
 			if filteredList[i].Name != name[0] {
@@ -117,6 +133,7 @@ func (s *Service) filter(groupList []models.Group, params url.Values) ([]models.
 	if member, exists := params["member"]; exists {
 		for _, m := range member {
 			for i := 0; i < len(filteredList); i++ {
+				// Use the constructed group map to filter more quickly rather than yet another loop
 				if !filteredList[i].ContainsMember(m) {
 					filteredList = append(filteredList[:i], filteredList[i+1:]...)
 					i--
