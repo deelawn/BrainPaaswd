@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,9 +16,9 @@ import (
 )
 
 const (
-	passwdPath = "passwd"
-	groupPath  = "group"
-	port       = ":8000"
+	defaultPasswdPath = "passwd"
+	defaultGroupPath  = "group"
+	defaultPort       = "8000"
 )
 
 var (
@@ -27,6 +28,15 @@ var (
 )
 
 func main() {
+
+	passwdPath := flag.String("passwd", defaultPasswdPath, "path to passwd file")
+	groupPath := flag.String("group", defaultGroupPath, "path to group file")
+	port := flag.String("port", defaultPort, "the port to run the web server on")
+	flag.Parse()
+
+	baseService = services.NewService()
+	groupService = groups.NewService(*baseService, *groupPath, storage.NewLocalCache(), file.NewReader)
+	userService = users.NewService(*baseService, *passwdPath, storage.NewLocalCache(), file.NewReader)
 
 	r := mux.NewRouter()
 
@@ -43,16 +53,9 @@ func main() {
 
 	srv := &http.Server{
 		Handler: r,
-		Addr:    port,
+		Addr:    ":" + *port,
 	}
 
-	fmt.Println("Server started!")
+	fmt.Printf("Server started on port %s!\n", *port)
 	log.Fatal(srv.ListenAndServe())
-}
-
-func init() {
-
-	baseService = services.NewService()
-	groupService = groups.NewService(*baseService, groupPath, storage.NewLocalCache(), file.NewReader)
-	userService = users.NewService(*baseService, passwdPath, storage.NewLocalCache(), file.NewReader)
 }

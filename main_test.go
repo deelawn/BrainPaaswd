@@ -14,6 +14,7 @@ import (
 
 	"github.com/deelawn/BrainPaaswd/models"
 	"github.com/deelawn/BrainPaaswd/readers/file"
+	"github.com/deelawn/BrainPaaswd/services"
 	"github.com/deelawn/BrainPaaswd/services/groups"
 	"github.com/deelawn/BrainPaaswd/services/users"
 	"github.com/deelawn/BrainPaaswd/storage"
@@ -64,12 +65,12 @@ func parseResponse(data []byte, target interface{}) {
 
 func initUserService() *users.Service {
 
-	return users.NewService(*baseService, "passwd", storage.NewLocalCache(), file.NewReader)
+	return users.NewService(*services.NewService(), "passwd", storage.NewLocalCache(), file.NewReader)
 }
 
 func initGroupService() *groups.Service {
 
-	return groups.NewService(*baseService, "group", storage.NewLocalCache(), file.NewReader)
+	return groups.NewService(*services.NewService(), "group", storage.NewLocalCache(), file.NewReader)
 }
 
 /****************************
@@ -223,11 +224,11 @@ func TestListGroups(t *testing.T) {
 func TestReadGroup(t *testing.T) {
 
 	tests := []struct {
-		name string
-		status int
+		name      string
+		status    int
 		groupname string
-		gid int64
-		members []string
+		gid       int64
+		members   []string
 	}{
 		{"found group", http.StatusOK, "_detachedsig", 207, []string{"_locationd"}},
 		{"group not found", http.StatusNotFound, "", 999, nil},
@@ -252,7 +253,7 @@ func TestReadGroup(t *testing.T) {
 			assert.EqualValues(t, tt.groupname, group.Name)
 			assert.EqualValues(t, tt.gid, group.GID)
 			assert.Len(t, group.Members, len(tt.members))
-			
+
 			for i, m := range tt.members {
 				assert.EqualValues(t, m, group.Members[i])
 			}
