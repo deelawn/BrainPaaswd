@@ -1,5 +1,9 @@
 package models
 
+import (
+	"strings"
+)
+
 // Group is a representation of a user as stored in a /etc/group file
 type Group struct {
 	Name    string                 `json:"name"` // Use int64 for GID even if it is only stored as int32
@@ -10,6 +14,12 @@ type Group struct {
 
 // AddMember will add a member to the Members list and the members map
 func (g *Group) AddMember(member string) {
+
+	member = strings.TrimSpace(member)
+
+	if len(member) == 0 {
+		return
+	}
 
 	g.Members = append(g.Members, member)
 

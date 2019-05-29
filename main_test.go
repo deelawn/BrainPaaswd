@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -81,41 +82,96 @@ func initGroupService() *groups.Service {
 
 func TestListUsers(t *testing.T) {
 
-	testUserService := initUserService()
+	tests := []struct {
+		name     string
+		size     int
+		status   int
+		index    int
+		username string
+		uid      int64
+		gid      int64
+		comment  string
+		home     string
+		shell    string
+		err      string
+	}{
+		{"full list one", 98, http.StatusOK, 10, "_ces", 32, 32, "Certificate Enrollment Service", "/var/empty", "/usr/bin/false", ""},
+		{"full list two", 98, http.StatusOK, 1, "root", 0, 0, "System Administrator", "/var/root", "/bin/sh", ""},
+	}
 
-	userList := make([]models.User, 0)
-	data, status := getTestResponse(http.MethodGet, "users", testUserService.List, nil)
-	parseResponse(data, &userList)
+	s := initUserService()
 
-	assert.EqualValues(t, http.StatusOK, status)
-	assert.Len(t, userList, 98)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			userList := make([]models.User, 0)
+			data, status := getTestResponse(http.MethodGet, "users", s.List, nil)
+
+			assert.EqualValues(t, tt.status, status)
+
+			// Don't bother checking the rest if an error is expected
+			if tt.err != "" {
+				assert.EqualValues(t, tt.err, string(data))
+				return
+			}
+
+			parseResponse(data, &userList)
+
+			assert.EqualValues(t, tt.size, len(userList))
+
+			if len(userList) == 0 {
+				return
+			}
+
+			assert.EqualValues(t, tt.username, userList[tt.index].Name)
+			assert.EqualValues(t, tt.uid, userList[tt.index].UID)
+			assert.EqualValues(t, tt.gid, userList[tt.index].GID)
+			assert.EqualValues(t, tt.comment, userList[tt.index].Comment)
+			assert.EqualValues(t, tt.home, userList[tt.index].Home)
+			assert.EqualValues(t, tt.shell, userList[tt.index].Shell)
+		})
+	}
 }
 
 func TestReadUser(t *testing.T) {
 
-	testUserService := initUserService()
+	tests := []struct {
+		name     string
+		status   int
+		username string
+		uid      int64
+		gid      int64
+		comment  string
+		home     string
+		shell    string
+	}{
+		{"found user", http.StatusOK, "_mysql", 74, 74, "MySQL Server", "/var/empty", "/usr/bin/false"},
+		{"user not found", http.StatusNotFound, "", 999, 999, "", "", ""},
+	}
 
-	var user models.User
-	data, status := getTestResponse(http.MethodGet, "users/1", testUserService.Read, map[string]string{"uid": "1"})
-	parseResponse(data, &user)
+	s := initUserService()
 
-	assert.EqualValues(t, http.StatusOK, status)
-	assert.EqualValues(t, "daemon", user.Name)
-	assert.EqualValues(t, 1, user.UID)
-	assert.EqualValues(t, 1, user.GID)
-	assert.EqualValues(t, "System Services", user.Comment)
-	assert.EqualValues(t, "/var/root", user.Home)
-	assert.EqualValues(t, "/usr/bin/false", user.Shell)
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var user models.User
+			uidStr := strconv.Itoa(int(tt.uid))
+			data, status := getTestResponse(http.MethodGet, "users/"+uidStr, s.Read, map[string]string{"uid": uidStr})
 
-func TestReadUserNonexistent(t *testing.T) {
+			assert.EqualValues(t, tt.status, status)
 
-	testUserService := initUserService()
+			if status == http.StatusNotFound {
+				return
+			}
 
-	data, status := getTestResponse(http.MethodGet, "users/1000", testUserService.Read, map[string]string{"uid": "1000"})
+			parseResponse(data, &user)
 
-	assert.EqualValues(t, http.StatusNotFound, status)
-	assert.EqualValues(t, `{"error":"could not read user"}`, string(data))
+			assert.EqualValues(t, tt.username, user.Name)
+			assert.EqualValues(t, tt.uid, user.UID)
+			assert.EqualValues(t, tt.gid, user.GID)
+			assert.EqualValues(t, tt.comment, user.Comment)
+			assert.EqualValues(t, tt.home, user.Home)
+			assert.EqualValues(t, tt.shell, user.Shell)
+		})
+	}
 }
 
 // End user tests
@@ -123,38 +179,85 @@ func TestReadUserNonexistent(t *testing.T) {
 // Begin group tests
 func TestListGroups(t *testing.T) {
 
-	testGroupService := initGroupService()
+	tests := []struct {
+		name      string
+		size      int
+		status    int
+		index     int
+		groupname string
+		gid       int64
+		members   []string
+	}{
+		{"full list one", 125, http.StatusOK, 83, "_lda", 211, []string{}},
+		{"full list two", 125, http.StatusOK, 45, "_www", 70, []string{"_devicemgr", "_teamsserver"}},
+	}
 
-	groupList := make([]models.Group, 0)
-	data, status := getTestResponse(http.MethodGet, "groups", testGroupService.List, nil)
-	parseResponse(data, &groupList)
+	s := initGroupService()
 
-	assert.EqualValues(t, http.StatusOK, status)
-	assert.Len(t, groupList, 125)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			groupList := make([]models.Group, 0)
+			data, status := getTestResponse(http.MethodGet, "groups", s.List, nil)
+
+			assert.EqualValues(t, tt.status, status)
+
+			parseResponse(data, &groupList)
+
+			assert.EqualValues(t, tt.size, len(groupList))
+
+			if len(groupList) == 0 {
+				return
+			}
+
+			assert.EqualValues(t, tt.groupname, groupList[tt.index].Name)
+			assert.EqualValues(t, tt.gid, groupList[tt.index].GID)
+			assert.Len(t, groupList[tt.index].Members, len(tt.members))
+
+			for i, m := range tt.members {
+				assert.EqualValues(t, m, groupList[tt.index].Members[i])
+			}
+		})
+	}
 }
 
 func TestReadGroup(t *testing.T) {
 
-	testGroupService := initGroupService()
+	tests := []struct {
+		name string
+		status int
+		groupname string
+		gid int64
+		members []string
+	}{
+		{"found group", http.StatusOK, "_detachedsig", 207, []string{"_locationd"}},
+		{"group not found", http.StatusNotFound, "", 999, nil},
+	}
 
-	var group models.Group
-	data, status := getTestResponse(http.MethodGet, "groups/29", testGroupService.Read, map[string]string{"gid": "29"})
-	parseResponse(data, &group)
+	s := initGroupService()
 
-	assert.EqualValues(t, http.StatusOK, status)
-	assert.EqualValues(t, "certusers", group.Name)
-	assert.EqualValues(t, 29, group.GID)
-	assert.Len(t, group.Members, 6)
-	assert.EqualValues(t, "root", group.Members[0])
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var group models.Group
+			gidStr := strconv.Itoa(int(tt.gid))
+			data, status := getTestResponse(http.MethodGet, "gid/"+gidStr, s.Read, map[string]string{"gid": gidStr})
 
-func TestReadGroupNonExistent(t *testing.T) {
+			assert.EqualValues(t, tt.status, status)
 
-	testGroupService := initGroupService()
-	data, status := getTestResponse(http.MethodGet, "groups/29", testGroupService.Read, map[string]string{"gid": "9999"})
+			if status == http.StatusNotFound {
+				return
+			}
 
-	assert.EqualValues(t, http.StatusNotFound, status)
-	assert.EqualValues(t, `{"error":"could not read group"}`, string(data))
+			parseResponse(data, &group)
+
+			assert.EqualValues(t, tt.groupname, group.Name)
+			assert.EqualValues(t, tt.gid, group.GID)
+			assert.Len(t, group.Members, len(tt.members))
+			
+			for i, m := range tt.members {
+				assert.EqualValues(t, m, group.Members[i])
+			}
+		})
+	}
 }
 
 // End group tests
