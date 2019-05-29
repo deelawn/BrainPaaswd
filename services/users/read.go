@@ -15,7 +15,6 @@ func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 
-	// Even though using the regex in the router, still need to error check in case of potential overflow
 	uid, err := convert.StringToInt64(mux.Vars(r)["uid"])
 
 	if err != nil {
@@ -50,22 +49,14 @@ func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
 
 func (s *Service) getUser(uid int64) (models.User, error, int) {
 
-	var user models.User
-
-	cache, err := s.GetCache(s.UserSource())
+	user, err := s.getCachedUser(uid)
 
 	if err == nil {
-		data, cacheErr := cache.IndexedData(uid)
-
-		if cacheErr == nil {
-			var ok bool
-			if user, ok = data.(models.User); ok {
-				return user, nil, http.StatusOK
-			}
-		}
+		return user, err, http.StatusOK
 	}
 
 	// If it made it this far, then cached data can't be used
+	cache, err := s.GetCache(s.UserSource())
 	_, indexedUsers, err := s.readFromSource(cache)
 
 	if err != nil {
@@ -78,4 +69,23 @@ func (s *Service) getUser(uid int64) (models.User, error, int) {
 	}
 
 	return user, nil, http.StatusOK
+}
+
+func (s *Service) getCachedUser(uid int64) (models.User, error) {
+
+	var user models.User
+	cache, err := s.GetCache(s.UserSource())
+
+	if err == nil {
+		data, cacheErr := cache.IndexedData(uid)
+
+		if cacheErr == nil {
+			var ok bool
+			if user, ok = data.(models.User); ok {
+				return user, nil
+			}
+		}
+	}
+
+	return models.User{}, errors.New("user not in cache")
 }

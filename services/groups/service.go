@@ -62,9 +62,15 @@ func (s *Service) readFromSource(cache storage.Cache) ([]models.Group, map[int64
 		}
 
 		newGroup := models.Group{
-			Name:    fields[0],
-			GID:     gid,
-			Members: strings.Split(fields[3], ","),
+			Name: fields[0],
+			GID:  gid,
+		}
+
+		// See the comment by members field in group.go for an explanation as to why Members isn't assigned explicity
+		// to the value that is being store in the local members value on the line below.
+		members := strings.Split(fields[3], ",")
+		for _, m := range members {
+			newGroup.AddMember(m)
 		}
 
 		results[gid] = newGroup

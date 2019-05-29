@@ -28,15 +28,17 @@ var (
 func main() {
 
 	r := mux.NewRouter()
-	
+
 	// users service
 	r.HandleFunc("/users", userService.List)
 	r.HandleFunc("/users/{uid:[0-9]+}", userService.Read)
-	// r.HandleFunc("/users/{uid:[0-9]+}/groups", userService.ListGroups)
+	r.HandleFunc("/users/{uid:[0-9]+}/groups", userService.Groups)
+	r.HandleFunc("/users/query", userService.List)
 
 	// groups service
 	r.HandleFunc("/groups", groupService.List)
 	r.HandleFunc("/groups/{gid:[0-9]+}", groupService.Read)
+	r.HandleFunc("/groups/query", groupService.List)
 
 	srv := &http.Server{
 		Handler: r,
