@@ -9,3 +9,5 @@ type Reader interface {
 	Read(p []byte) (n int, err error)
 	GetModifiedTime() (time.Time, error)
 }
+
+type ReaderBuilder func(source string) Reader

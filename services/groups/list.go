@@ -12,17 +12,25 @@ import (
 	"github.com/deelawn/BrainPaaswd/models"
 )
 
+// List will return a list of all groups or a list specified by the provided query parameters
 func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 
 	// Retrieve the full list of users
-	groupList, err, statusCode := s.getGroups()
+	resources, err, statusCode := s.GetResources(resourceParser)
 
 	if err != nil {
 		w.WriteHeader(statusCode)
 		w.Write([]byte(`{"error":"could not read groups"}`))
 		return
+	}
+
+	// Get the list and assert them to the proper type
+	resourceList := resources.([]interface{})
+	groupList := make([]models.Group, len(resourceList))
+	for i, r := range resourceList {
+		groupList[i] = r.(models.Group)
 	}
 
 	// Retrieve any query parameters
@@ -56,38 +64,6 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// getGroups returns a full list of groups
-func (s *Service) getGroups() ([]models.Group, error, int) {
-
-	var groupList []models.Group
-
-	// Build the reader that points to the data source
-	reader := s.readerBuilder(s.source)
-
-	// Check if the cache is stale
-	if !s.CacheIsStale(s.source, s.cache, reader) {
-
-		// If it isn't stale, then retrieve the cached user data
-		data, cacheErr := s.cache.Data()
-
-		if cacheErr == nil {
-			var ok bool
-			if groupList, ok = data.([]models.Group); ok {
-				return groupList, nil, http.StatusOK
-			}
-		}
-	}
-
-	// If it made it this far, then cached data can't be used
-	groupList, _, err := s.readFromSource(s.cache, reader)
-
-	if err != nil {
-		return nil, err, http.StatusInternalServerError
-	}
-
-	return groupList, nil, http.StatusOK
-}
-
 // filter takes a list of groups and query parameters and returns the filtered list
 func (s *Service) filter(groupList []models.Group, params url.Values) ([]models.Group, error) {
 
@@ -99,7 +75,7 @@ func (s *Service) filter(groupList []models.Group, params url.Values) ([]models.
 
 		if err == nil {
 			// Retrieve the group using the provided GID
-			group, err, statusCode := s.getGroup(gid)
+			resource, err, statusCode := s.GetResource(gid, resourceParser)
 
 			// Return empty list if no matching gid is found
 			if statusCode == http.StatusNotFound {
@@ -107,6 +83,8 @@ func (s *Service) filter(groupList []models.Group, params url.Values) ([]models.
 			} else if err != nil {
 				return nil, err
 			}
+
+			group, _ := resource.(models.Group)
 
 			// If found by GID, this is the only group in the result list; no more can be added but this could be removed
 			filteredList = append(filteredList, group)

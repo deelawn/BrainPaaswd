@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/deelawn/BrainPaaswd/models"
 	"github.com/deelawn/convert"
 	"github.com/gorilla/mux"
 )
@@ -24,7 +25,7 @@ func (s *Service) Groups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the user so that the name can be provided to the groups query
-	foundUser, err, statusCode := s.getUser(uid)
+	resource, err, statusCode := s.GetResource(uid, resourceParser)
 
 	if err != nil {
 		w.WriteHeader(statusCode)
@@ -32,7 +33,8 @@ func (s *Service) Groups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := groupsQuery + foundUser.Name
+	user, _ := resource.(models.User)
+	query := groupsQuery + user.Name
 
 	// Query the groups service over HTTP to fully separate concerns of services
 	resp, err := http.Get(query)

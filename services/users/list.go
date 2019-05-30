@@ -18,12 +18,19 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 
 	// Retrieve the full list of users
-	userList, err, statusCode := s.getUsers()
+	resources, err, statusCode := s.GetResources(resourceParser)
 
 	if err != nil {
 		w.WriteHeader(statusCode)
 		w.Write([]byte(`{"error":"could not read users"}`))
 		return
+	}
+
+	// Get the list and assert them to the proper type
+	resourceList := resources.([]interface{})
+	userList := make([]models.User, len(resourceList))
+	for i, r := range resourceList {
+		userList[i] = r.(models.User)
 	}
 
 	// Retrieve any query parameters
@@ -57,40 +64,6 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// getUsers returns a full list of users
-func (s *Service) getUsers() ([]models.User, error, int) {
-
-	var userList []models.User
-
-	// Build the reader that points to the data source
-	reader := s.readerBuilder(s.source)
-
-	// Check if the cache is stale
-	if !s.CacheIsStale(s.source, s.cache, reader) {
-
-		// If it isn't stale, then retrieve the cached user data
-		data, cacheErr := s.cache.Data()
-
-		if cacheErr == nil {
-			var ok bool
-
-			// Assert the data to the proper type and return the user list
-			if userList, ok = data.([]models.User); ok {
-				return userList, nil, http.StatusOK
-			}
-		}
-	}
-
-	// If it made it this far, then cached data can't be used, so read the data from its source
-	userList, _, err := s.readFromSource(s.cache, reader)
-
-	if err != nil {
-		return nil, err, http.StatusInternalServerError
-	}
-
-	return userList, nil, http.StatusOK
-}
-
 // filter takes a list of users and query parameters and returns the filtered list
 func (s *Service) filter(userList []models.User, params url.Values) ([]models.User, error) {
 
@@ -102,7 +75,7 @@ func (s *Service) filter(userList []models.User, params url.Values) ([]models.Us
 
 		if err == nil {
 			// Retrieve the user using the provided UID
-			user, err, statusCode := s.getUser(uid)
+			resource, err, statusCode := s.GetResource(uid, resourceParser)
 
 			// Return empty list if no matching uid is found
 			if statusCode == http.StatusNotFound {
@@ -110,6 +83,8 @@ func (s *Service) filter(userList []models.User, params url.Values) ([]models.Us
 			} else if err != nil {
 				return nil, err
 			}
+
+			user, _ := resource.(models.User)
 
 			// If found by UID, this is the only user in the result list; no more can be added but this could be removed
 			filteredList = append(filteredList, user)

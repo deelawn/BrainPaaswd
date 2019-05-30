@@ -65,12 +65,12 @@ func parseResponse(data []byte, target interface{}) {
 
 func initUserService() *users.Service {
 
-	return users.NewService(*services.NewService(), "passwd", storage.NewLocalCache(), file.NewReader)
+	return users.NewService(services.NewService("passwd", storage.NewLocalCache(), file.NewReader))
 }
 
 func initGroupService() *groups.Service {
 
-	return groups.NewService(*services.NewService(), "group", storage.NewLocalCache(), file.NewReader)
+	return groups.NewService(services.NewService("group", storage.NewLocalCache(), file.NewReader))
 }
 
 /****************************

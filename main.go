@@ -21,12 +21,6 @@ const (
 	defaultPort       = "8000"
 )
 
-var (
-	baseService  *services.Service
-	groupService *groups.Service
-	userService  *users.Service
-)
-
 func main() {
 
 	passwdPath := flag.String("passwd", defaultPasswdPath, "path to passwd file")
@@ -34,9 +28,8 @@ func main() {
 	port := flag.String("port", defaultPort, "the port to run the web server on")
 	flag.Parse()
 
-	baseService = services.NewService()
-	groupService = groups.NewService(*baseService, *groupPath, storage.NewLocalCache(), file.NewReader)
-	userService = users.NewService(*baseService, *passwdPath, storage.NewLocalCache(), file.NewReader)
+	groupService := groups.NewService(services.NewService(*groupPath, storage.NewLocalCache(), file.NewReader))
+	userService := users.NewService(services.NewService(*passwdPath, storage.NewLocalCache(), file.NewReader))
 
 	r := mux.NewRouter()
 
