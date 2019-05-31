@@ -22,7 +22,7 @@ func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve the user
-	user, err, statusCode := s.GetResource(uid, resourceParser)
+	user, err, statusCode := s.GetResource(uid, ResourceParser)
 
 	if err != nil {
 		w.WriteHeader(statusCode)

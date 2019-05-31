@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	defaultPasswdPath = "passwd"
-	defaultGroupPath  = "group"
+	defaultPasswdPath = "/etc/passwd"
+	defaultGroupPath  = "/etc/group"
 	defaultPort       = "8000"
 )
 
@@ -28,8 +28,10 @@ func main() {
 	port := flag.String("port", defaultPort, "the port to run the web server on")
 	flag.Parse()
 
-	groupService := groups.NewService(services.NewService(*groupPath, storage.NewLocalCache(), file.NewReader))
-	userService := users.NewService(services.NewService(*passwdPath, storage.NewLocalCache(), file.NewReader))
+	groupService := groups.NewService(services.NewService(*groupPath, storage.NewLocalCache(),
+		file.NewReader, groups.ResourceParser))
+	userService := users.NewService(services.NewService(*passwdPath, storage.NewLocalCache(),
+		file.NewReader, users.ResourceParser))
 
 	r := mux.NewRouter()
 

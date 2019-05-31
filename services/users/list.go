@@ -18,7 +18,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 
 	// Retrieve the full list of users
-	resources, err, statusCode := s.GetResources(resourceParser)
+	resources, err, statusCode := s.GetResources(ResourceParser)
 
 	if err != nil {
 		w.WriteHeader(statusCode)
@@ -37,7 +37,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 
 	// If the query URI is used and query parameters exist, then apply the filters
-	if len(params) > 0 && strings.Index(r.RequestURI, "/users/query?") == 0 {
+	if len(params) > 0 && strings.Index(r.RequestURI, "/users/query?") != -1 {
 		userList, err = s.filter(userList, params)
 
 		if err != nil {
@@ -75,7 +75,7 @@ func (s *Service) filter(userList []models.User, params url.Values) ([]models.Us
 
 		if err == nil {
 			// Retrieve the user using the provided UID
-			resource, err, statusCode := s.GetResource(uid, resourceParser)
+			resource, err, statusCode := s.GetResource(uid, ResourceParser)
 
 			// Return empty list if no matching uid is found
 			if statusCode == http.StatusNotFound {

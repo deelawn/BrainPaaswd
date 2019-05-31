@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/deelawn/BrainPaaswd/readers"
@@ -24,11 +25,6 @@ type Service struct {
 func (s *Service) Source() string {
 
 	return s.source
-}
-
-func (s *Service) Cache() storage.Cache {
-
-	return s.cache
 }
 
 func (s *Service) Reader() readers.Reader {
@@ -184,11 +180,23 @@ func (s *Service) getCachedResource(id int64, reader readers.Reader) interface{}
 }
 
 // NewService constructs and returns a new instance of Service
-func NewService(source string, cache storage.Cache, readerBuilder readers.ReaderBuilder) *Service {
+func NewService(source string, cache storage.Cache,
+	readerBuilder readers.ReaderBuilder, parser ResourceParser) *Service {
 
-	return &Service{
+	s := &Service{
 		source:        source,
 		cache:         cache,
 		readerBuilder: readerBuilder,
 	}
+
+	// Initialize the cache
+	_, _, err := s.ReadFromSource(readerBuilder(source), parser)
+
+	// If some error occurred, this means the source can't be read from
+	if err != nil {
+		log.Printf("Can't read from source %s; %v\nExiting...\n", source, err)
+		os.Exit(1)
+	}
+
+	return s
 }

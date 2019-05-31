@@ -18,7 +18,7 @@ type Service struct {
 	*services.Service
 }
 
-var resourceParser = func(data string) (interface{}, int64, error) {
+var ResourceParser = func(data string) (interface{}, int64, error) {
 
 	// Skip blank lines
 	if len(strings.TrimSpace(data)) == 0 {
@@ -39,8 +39,9 @@ var resourceParser = func(data string) (interface{}, int64, error) {
 	}
 
 	newGroup := models.Group{
-		Name: fields[0],
-		GID:  gid,
+		Name:    fields[0],
+		GID:     gid,
+		Members: make([]string, 0),
 	}
 
 	// See the comment by members field in group.go for an explanation as to why Members isn't assigned explicity

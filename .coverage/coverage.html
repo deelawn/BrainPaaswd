@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html><head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0" selected="selected">github.com/deelawn/BrainPaaswd/models/group.go (100.0%)</option>
+				
+				<option value="file1">github.com/deelawn/BrainPaaswd/readers/file/file_reader.go (84.6%)</option>
+				
+				<option value="file2">github.com/deelawn/BrainPaaswd/services/groups/list.go (77.6%)</option>
+				
+				<option value="file3">github.com/deelawn/BrainPaaswd/services/groups/read.go (60.0%)</option>
+				
+				<option value="file4">github.com/deelawn/BrainPaaswd/services/groups/service.go (78.6%)</option>
+				
+				<option value="file5">github.com/deelawn/BrainPaaswd/services/service.go (74.6%)</option>
+				
+				<option value="file6">github.com/deelawn/BrainPaaswd/services/users/groups.go (0.0%)</option>
+				
+				<option value="file7">github.com/deelawn/BrainPaaswd/services/users/list.go (81.2%)</option>
+				
+				<option value="file8">github.com/deelawn/BrainPaaswd/services/users/read.go (60.0%)</option>
+				
+				<option value="file9">github.com/deelawn/BrainPaaswd/services/users/service.go (71.4%)</option>
+				
+				<option value="file10">github.com/deelawn/BrainPaaswd/storage/local_cache.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: block;">package models
+
+import (
+        "strings"
+)
+
+// Group is a representation of a user as stored in a /etc/group file
+type Group struct {
+        Name    string                 `json:"name"` // Use int64 for GID even if it is only stored as int32
+        GID     int64                  `json:"gid"`  // in order to maintain forward compatibility.
+        Members []string               `json:"members"`
+        members map[string]interface{} // To prevent iterating over the entire Members array when querying groups my members
+}
+
+// AddMember will add a member to the Members list and the members map
+func (g *Group) AddMember(member string) <span class="cov8" title="1">{
+
+        member = strings.TrimSpace(member)
+
+        if len(member) == 0 </span><span class="cov8" title="1">{
+                return
+        }</span>
+
+        <span class="cov8" title="1">g.Members = append(g.Members, member)
+
+        if g.members == nil </span><span class="cov8" title="1">{
+                g.members = make(map[string]interface{})
+        }</span>
+
+        <span class="cov8" title="1">g.members[member] = nil</span>
+}
+
+// ContainsMember returns true if the group contains the provided member
+func (g *Group) ContainsMember(member string) bool <span class="cov8" title="1">{
+
+        // Handle no members case
+        if strings.TrimSpace(member) == "" &amp;&amp; len(g.members) == 0 </span><span class="cov8" title="1">{
+                return true
+        }</span>
+
+        <span class="cov8" title="1">_, exists := g.members[member]
+        return exists</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package file
+
+import (
+        "io"
+        "os"
+        "time"
+
+        "github.com/deelawn/BrainPaaswd/readers"
+)
+
+// Reader is a file reader that implements io.Reader
+type Reader struct {
+        source string
+        fd     *os.File
+}
+
+// Read reads data from a file source and indicates when the reading has completed
+func (r *Reader) Read(p []byte) (n int, err error) <span class="cov8" title="1">{
+
+        // Open the file if it is the first iteration of calling Read
+        if r.fd == nil </span><span class="cov8" title="1">{
+                r.fd, err = os.Open(r.source)
+
+                if err != nil </span><span class="cov0" title="0">{
+                        return 0, err
+                }</span>
+        }
+
+        // Read from the file
+        <span class="cov8" title="1">n, err = r.fd.Read(p)
+
+        // Everything has been read; close the file
+        if n == 0 &amp;&amp; err == io.EOF </span><span class="cov8" title="1">{
+                _ = r.fd.Close()
+        }</span>
+
+        <span class="cov8" title="1">return</span>
+}
+
+// GetModifiedTime returns the time when the source was last updated
+func (r *Reader) GetModifiedTime() (time.Time, error) <span class="cov8" title="1">{
+
+        info, err := os.Stat(r.source)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return time.Unix(0, 0), err
+        }</span>
+
+        <span class="cov8" title="1">return info.ModTime(), nil</span>
+}
+
+// NewReader returns a new instance of Reader using the provided source identifier
+func NewReader(source string) readers.Reader <span class="cov8" title="1">{
+
+        return &amp;Reader{source: source}
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package groups
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strings"
+
+        "github.com/deelawn/convert"
+
+        "github.com/deelawn/BrainPaaswd/models"
+)
+
+// List will return a list of all groups or a list specified by the provided query parameters
+func (s *Service) List(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+
+        w.Header().Add("Content-Type", "application/json")
+
+        // Retrieve the full list of users
+        resources, err, statusCode := s.GetResources(ResourceParser)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(statusCode)
+                w.Write([]byte(`{"error":"could not read groups"}`))
+                return
+        }</span>
+
+        // Get the list and assert them to the proper type
+        <span class="cov8" title="1">resourceList := resources.([]interface{})
+        groupList := make([]models.Group, len(resourceList))
+        for i, r := range resourceList </span><span class="cov8" title="1">{
+                groupList[i] = r.(models.Group)
+        }</span>
+
+        // Retrieve any query parameters
+        <span class="cov8" title="1">params := r.URL.Query()
+
+        // If the query URI is used and query parameters exist, then apply the filters
+        if len(params) &gt; 0 &amp;&amp; strings.Index(r.RequestURI, "/groups/query?") != -1 </span><span class="cov8" title="1">{
+                groupList, err = s.filter(groupList, params)
+
+                if err != nil </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusInternalServerError)
+                        w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, err.Error())))
+                        return
+                }</span>
+        }
+
+        // Convert the list of groups to byte data
+        <span class="cov8" title="1">respData, err := json.Marshal(groupList)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"group data error"}`))
+        }</span>
+
+        // Write the response; no need to write the response code as 200 is the default
+        <span class="cov8" title="1">_, err = w.Write(respData)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"unknown group error"}`))
+        }</span>
+}
+
+// filter takes a list of groups and query parameters and returns the filtered list
+func (s *Service) filter(groupList []models.Group, params url.Values) ([]models.Group, error) <span class="cov8" title="1">{
+
+        filteredList := make([]models.Group, 0)
+
+        // First check for gid; if it is provided but not found then the rest of the parameters don't need checking
+        if gidStr, exists := params["gid"]; exists </span><span class="cov8" title="1">{
+                gid, err := convert.StringToInt64(gidStr[0])
+
+                if err == nil </span><span class="cov8" title="1">{
+                        // Retrieve the group using the provided GID
+                        resource, err, statusCode := s.GetResource(gid, ResourceParser)
+
+                        // Return empty list if no matching gid is found
+                        if statusCode == http.StatusNotFound </span><span class="cov8" title="1">{
+                                return filteredList, nil
+                        }</span> else<span class="cov8" title="1"> if err != nil </span><span class="cov0" title="0">{
+                                return nil, err
+                        }</span>
+
+                        <span class="cov8" title="1">group, _ := resource.(models.Group)
+
+                        // If found by GID, this is the only group in the result list; no more can be added but this could be removed
+                        filteredList = append(filteredList, group)</span>
+                }
+        } else<span class="cov8" title="1"> {
+                // Otherwise add all groups to the filtered list and remove them as necessary
+                filteredList = append(filteredList, groupList...)
+        }</span>
+
+        /*
+                Now check for the rest of the query parameters. Each of the loops below will filter each parameter
+                sequentially and remove items that do not match the provided parameter
+        */
+
+        <span class="cov8" title="1">if name, exists := params["name"]; exists </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(filteredList); i++ </span><span class="cov8" title="1">{
+                        if filteredList[i].Name != name[0] </span><span class="cov8" title="1">{
+                                filteredList = append(filteredList[:i], filteredList[i+1:]...)
+                                i--
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">if member, exists := params["member"]; exists </span><span class="cov8" title="1">{
+                for _, m := range member </span><span class="cov8" title="1">{
+                        for i := 0; i &lt; len(filteredList); i++ </span><span class="cov8" title="1">{
+                                // Use the constructed group map to filter more quickly rather than yet another loop
+                                if !filteredList[i].ContainsMember(m) </span><span class="cov8" title="1">{
+                                        filteredList = append(filteredList[:i], filteredList[i+1:]...)
+                                        i--
+                                }</span>
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">return filteredList, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package groups
+
+import (
+        "encoding/json"
+        "net/http"
+
+        "github.com/deelawn/convert"
+        "github.com/gorilla/mux"
+)
+
+// Read will return a group that matches the provided GID or an error if one is not found
+func (s *Service) Read(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+
+        w.Header().Add("Content-Type", "application/json")
+
+        gid, err := convert.StringToInt64(mux.Vars(r)["gid"])
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"malformed gid"}`))
+                return
+        }</span>
+
+        // Retrieve the group
+        <span class="cov8" title="1">group, err, statusCode := s.GetResource(gid, ResourceParser)
+
+        if err != nil </span><span class="cov8" title="1">{
+                w.WriteHeader(statusCode)
+                w.Write([]byte(`{"error":"could not read group"}`))
+                return
+        }</span>
+
+        // Convert the group to byte data
+        <span class="cov8" title="1">respData, err := json.Marshal(group)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"group data error"}`))
+                return
+        }</span>
+
+        // Write the response; no need to write the response code as 200 is the default
+        <span class="cov8" title="1">_, err = w.Write(respData)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"unknown group error"}`))
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package groups
+
+import (
+        "errors"
+        "fmt"
+        "strings"
+
+        "github.com/deelawn/convert"
+
+        "github.com/deelawn/BrainPaaswd/models"
+        "github.com/deelawn/BrainPaaswd/services"
+)
+
+const numRecordFields = 4
+
+// Service defines a group service
+type Service struct {
+        *services.Service
+}
+
+var ResourceParser = func(data string) (interface{}, int64, error) <span class="cov8" title="1">{
+
+        // Skip blank lines
+        if len(strings.TrimSpace(data)) == 0 </span><span class="cov0" title="0">{
+                return nil, -1, errors.New("empty record")
+        }</span>
+
+        <span class="cov8" title="1">fields := strings.Split(data, ":")
+
+        // Validate the number of fields in the record
+        if len(fields) != numRecordFields </span><span class="cov0" title="0">{
+                return nil, -1, errors.New("group record is malformed")
+        }</span>
+
+        // GID needs to be an integer
+        <span class="cov8" title="1">gid, gidErr := convert.StringToInt64(fields[2])
+        if gidErr != nil </span><span class="cov0" title="0">{
+                return nil, -1, fmt.Errorf("invalid gid %s: %v\n", fields[2], gidErr)
+        }</span>
+
+        <span class="cov8" title="1">newGroup := models.Group{
+                Name:    fields[0],
+                GID:     gid,
+                Members: make([]string, 0),
+        }
+
+        // See the comment by members field in group.go for an explanation as to why Members isn't assigned explicity
+        // to the value that is being store in the local members value on the line below.
+        members := strings.Split(fields[3], ",")
+
+        for _, m := range members </span><span class="cov8" title="1">{
+                newGroup.AddMember(m)
+        }</span>
+
+        <span class="cov8" title="1">return newGroup, gid, nil</span>
+}
+
+// NewService returns a new instance of the groups service
+func NewService(service *services.Service) *Service <span class="cov8" title="1">{
+
+        return &amp;Service{
+                Service: service,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package services
+
+import (
+        "bytes"
+        "fmt"
+        "io/ioutil"
+        "log"
+        "net/http"
+        "os"
+        "strings"
+
+        "github.com/deelawn/BrainPaaswd/readers"
+        "github.com/deelawn/BrainPaaswd/storage"
+)
+
+const sourceNotExist = "%s does not exist for source: %s\n"
+
+// Service defines functionality shared between services
+type Service struct {
+        source        string
+        cache         storage.Cache
+        readerBuilder readers.ReaderBuilder
+}
+
+func (s *Service) Source() string <span class="cov0" title="0">{
+
+        return s.source
+}</span>
+
+func (s *Service) Reader() readers.Reader <span class="cov8" title="1">{
+
+        return s.readerBuilder(s.source)
+}</span>
+
+// ReadFromSource will read resource data from the source the reader points to and return it structured
+func (s *Service) ReadFromSource(reader readers.Reader,
+        parser ResourceParser) (interface{}, map[interface{}]interface{}, error) <span class="cov8" title="1">{
+
+        // Read the data from the data source
+        data, err := s.readData(reader)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, nil, err
+        }</span>
+
+        // Define the map and list to return
+        <span class="cov8" title="1">resourceMap := make(map[interface{}]interface{})
+        resourceList := make([]interface{}, 0)
+
+        // Now do the transformation
+        records := strings.Split(string(data), "\n")
+        for i, record := range records </span><span class="cov8" title="1">{
+                newResource, id, err := parser(record)
+
+                // Continue past any records that could not be parsed an log the error
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Printf("%s parsing error on line %d: %v; data: %s\n", s.Source(), i, err, record)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">resourceMap[id] = newResource
+                resourceList = append(resourceList, newResource)</span>
+        }
+
+        // If this function is being executed, it means that the cache needs to updated
+        <span class="cov8" title="1">s.cache.SetData(resourceList, resourceMap)
+
+        return resourceList, resourceMap, nil</span>
+}
+
+// readData will return byte data that corresponds to a data source that the reader points to
+func (s *Service) readData(reader readers.Reader) ([]byte, error) <span class="cov8" title="1">{
+
+        // Initalize a new reader and pass it to ReadAll to read the data from the data source
+        result, err := ioutil.ReadAll(reader)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Trim the null bytes left over in the file read buffer
+        <span class="cov8" title="1">result = bytes.Trim(result, "\u0000")
+
+        return result, nil</span>
+
+}
+
+// CacheIsStale returns true if a cache is stale
+func (s *Service) CacheIsStale(reader readers.Reader) bool <span class="cov8" title="1">{
+
+        // Retrieves the last time the source was modified
+        lastModified, err := reader.GetModifiedTime()
+
+        if err != nil </span><span class="cov0" title="0">{
+                return true
+        }</span>
+
+        // If the source data was modified since the cache was last updated, the cache is stale
+        <span class="cov8" title="1">if lastModified.After(s.cache.LastUpdated()) </span><span class="cov0" title="0">{
+                return true
+        }</span>
+
+        <span class="cov8" title="1">return false</span>
+}
+
+// GetResources retrieves a list of all resources for a service
+func (s *Service) GetResources(parser ResourceParser) (interface{}, error, int) <span class="cov8" title="1">{
+
+        reader := s.Reader()
+        resources := s.getCachedResources(reader)
+
+        // The resources were found; return them
+        if resources != nil </span><span class="cov8" title="1">{
+                return resources, nil, http.StatusOK
+        }</span>
+
+        // If it made it this far, then cached data can't be used
+        <span class="cov0" title="0">resources, _, err := s.ReadFromSource(reader, parser)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err, http.StatusInternalServerError
+        }</span>
+
+        <span class="cov0" title="0">return resources, nil, http.StatusOK</span>
+}
+
+// getCachedResources attempts to retrieve a list of all resources for a service from the cache
+func (s *Service) getCachedResources(reader readers.Reader) interface{} <span class="cov8" title="1">{
+
+        if !s.CacheIsStale(reader) </span><span class="cov8" title="1">{
+                resources, cacheErr := s.cache.Data()
+
+                if cacheErr == nil </span><span class="cov8" title="1">{
+                        return resources
+                }</span>
+        }
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetResource retrieves a resource for a service
+func (s *Service) GetResource(id int64, parser ResourceParser) (interface{}, error, int) <span class="cov8" title="1">{
+
+        reader := s.Reader()
+        resource := s.getCachedResource(id, reader)
+
+        // The resource was found; return it
+        if resource != nil </span><span class="cov8" title="1">{
+                return resource, nil, http.StatusOK
+        }</span>
+
+        // If it made it this far, then cached data can't be used
+        <span class="cov8" title="1">_, indexedResources, err := s.ReadFromSource(reader, parser)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err, http.StatusInternalServerError
+        }</span>
+
+        // Use the map that was returned to check if the resource exists
+        <span class="cov8" title="1">var exists bool
+        if resource, exists = indexedResources[id]; !exists </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s not found\n", s.source), http.StatusNotFound
+        }</span>
+
+        <span class="cov0" title="0">return resource, nil, http.StatusOK</span>
+}
+
+// getCachedResource attempts to retrieve a resource for a service from the cache
+func (s *Service) getCachedResource(id int64, reader readers.Reader) interface{} <span class="cov8" title="1">{
+
+        if !s.CacheIsStale(reader) </span><span class="cov8" title="1">{
+                resource, cacheErr := s.cache.IndexedData(id)
+
+                if cacheErr == nil </span><span class="cov8" title="1">{
+                        return resource
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// NewService constructs and returns a new instance of Service
+func NewService(source string, cache storage.Cache,
+        readerBuilder readers.ReaderBuilder, parser ResourceParser) *Service <span class="cov8" title="1">{
+
+        s := &amp;Service{
+                source:        source,
+                cache:         cache,
+                readerBuilder: readerBuilder,
+        }
+
+        // Initialize the cache
+        _, _, err := s.ReadFromSource(readerBuilder(source), parser)
+
+        // If some error occurred, this means the source can't be read from
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Can't read from source %s; %v\nExiting...\n", source, err)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov8" title="1">return s</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package users
+
+import (
+        "io/ioutil"
+        "net/http"
+
+        "github.com/deelawn/BrainPaaswd/models"
+        "github.com/deelawn/convert"
+        "github.com/gorilla/mux"
+)
+
+const groupsQuery = "http://localhost:8000/groups/query?member="
+
+// Group returns all groups that a user belongs to
+func (s *Service) Groups(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+
+        w.Header().Add("Content-Type", "application/json")
+
+        uid, err := convert.StringToInt64(mux.Vars(r)["uid"])
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"malformed uid"}`))
+                return
+        }</span>
+
+        // Get the user so that the name can be provided to the groups query
+        <span class="cov0" title="0">resource, err, statusCode := s.GetResource(uid, ResourceParser)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(statusCode)
+                w.Write([]byte(`{"error":"could not read user"}`))
+                return
+        }</span>
+
+        <span class="cov0" title="0">user, _ := resource.(models.User)
+        query := groupsQuery + user.Name
+
+        // Query the groups service over HTTP to fully separate concerns of services
+        resp, err := http.Get(query)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"could not read user groups"}`))
+                return
+        }</span>
+
+        <span class="cov0" title="0">defer resp.Body.Close()
+        groups, err := ioutil.ReadAll(resp.Body)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"could not parse user groups"}`))
+                return
+        }</span>
+
+        // groups is already []byte type, so no need to Unmarshal and Marshal the response from the groups service
+        <span class="cov0" title="0">w.Write(groups)</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package users
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strings"
+
+        "github.com/deelawn/convert"
+
+        "github.com/deelawn/BrainPaaswd/models"
+)
+
+// List will return a list of all users or a list specified by the provided query parameters
+func (s *Service) List(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+
+        w.Header().Add("Content-Type", "application/json")
+
+        // Retrieve the full list of users
+        resources, err, statusCode := s.GetResources(ResourceParser)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(statusCode)
+                w.Write([]byte(`{"error":"could not read users"}`))
+                return
+        }</span>
+
+        // Get the list and assert them to the proper type
+        <span class="cov8" title="1">resourceList := resources.([]interface{})
+        userList := make([]models.User, len(resourceList))
+        for i, r := range resourceList </span><span class="cov8" title="1">{
+                userList[i] = r.(models.User)
+        }</span>
+
+        // Retrieve any query parameters
+        <span class="cov8" title="1">params := r.URL.Query()
+
+        // If the query URI is used and query parameters exist, then apply the filters
+        if len(params) &gt; 0 &amp;&amp; strings.Index(r.RequestURI, "/users/query?") != -1 </span><span class="cov8" title="1">{
+                userList, err = s.filter(userList, params)
+
+                if err != nil </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusInternalServerError)
+                        w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, err.Error())))
+                        return
+                }</span>
+        }
+
+        // Convert the list of users to byte data
+        <span class="cov8" title="1">respData, err := json.Marshal(userList)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"user data error"}`))
+        }</span>
+
+        // Write the response; no need to write the response code as 200 is the default
+        <span class="cov8" title="1">_, err = w.Write(respData)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"unknown user error"}`))
+        }</span>
+}
+
+// filter takes a list of users and query parameters and returns the filtered list
+func (s *Service) filter(userList []models.User, params url.Values) ([]models.User, error) <span class="cov8" title="1">{
+
+        filteredList := make([]models.User, 0)
+
+        // First check for uid; if it is provided but not found then the rest of the parameters don't need checking
+        if uidStr, exists := params["uid"]; exists </span><span class="cov8" title="1">{
+                uid, err := convert.StringToInt64(uidStr[0])
+
+                if err == nil </span><span class="cov8" title="1">{
+                        // Retrieve the user using the provided UID
+                        resource, err, statusCode := s.GetResource(uid, ResourceParser)
+
+                        // Return empty list if no matching uid is found
+                        if statusCode == http.StatusNotFound </span><span class="cov0" title="0">{
+                                return filteredList, nil
+                        }</span> else<span class="cov8" title="1"> if err != nil </span><span class="cov0" title="0">{
+                                return nil, err
+                        }</span>
+
+                        <span class="cov8" title="1">user, _ := resource.(models.User)
+
+                        // If found by UID, this is the only user in the result list; no more can be added but this could be removed
+                        filteredList = append(filteredList, user)</span>
+                }
+        } else<span class="cov8" title="1"> {
+                // Otherwise add all users to the filtered list and remove them as necessary
+                filteredList = append(filteredList, userList...)
+        }</span>
+
+        /*
+                Now check for the rest of the query parameters. Each of the loops below will filter each parameter
+                sequentially and remove items that do not match the provided parameter
+        */
+
+        <span class="cov8" title="1">if name, exists := params["name"]; exists </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(filteredList); i++ </span><span class="cov8" title="1">{
+                        if filteredList[i].Name != name[0] </span><span class="cov8" title="1">{
+                                filteredList = append(filteredList[:i], filteredList[i+1:]...)
+                                i--
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">if gidStr, exists := params["gid"]; exists </span><span class="cov8" title="1">{
+                if gid, intErr := convert.StringToInt64(gidStr[0]); intErr == nil </span><span class="cov8" title="1">{
+                        for i := 0; i &lt; len(filteredList); i++ </span><span class="cov8" title="1">{
+                                if filteredList[i].GID != gid </span><span class="cov8" title="1">{
+                                        filteredList = append(filteredList[:i], filteredList[i+1:]...)
+                                        i--
+                                }</span>
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">if comment, exists := params["comment"]; exists </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(filteredList); i++ </span><span class="cov8" title="1">{
+                        if filteredList[i].Comment != comment[0] </span><span class="cov8" title="1">{
+                                filteredList = append(filteredList[:i], filteredList[i+1:]...)
+                                i--
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">if home, exists := params["home"]; exists </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(filteredList); i++ </span><span class="cov8" title="1">{
+                        if filteredList[i].Home != home[0] </span><span class="cov8" title="1">{
+                                filteredList = append(filteredList[:i], filteredList[i+1:]...)
+                                i--
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">if shell, exists := params["shell"]; exists </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(filteredList); i++ </span><span class="cov8" title="1">{
+                        if filteredList[i].Shell != shell[0] </span><span class="cov8" title="1">{
+                                filteredList = append(filteredList[:i], filteredList[i+1:]...)
+                                i--
+                        }</span>
+                }
+        }
+
+        // The remaining list contains only users that match all provided parameters
+        <span class="cov8" title="1">return filteredList, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package users
+
+import (
+        "encoding/json"
+        "net/http"
+
+        "github.com/deelawn/convert"
+        "github.com/gorilla/mux"
+)
+
+// Read will return a user that matches the provided UID or an error if one is not found
+func (s *Service) Read(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+
+        w.Header().Add("Content-Type", "application/json")
+
+        uid, err := convert.StringToInt64(mux.Vars(r)["uid"])
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"malformed uid"}`))
+                return
+        }</span>
+
+        // Retrieve the user
+        <span class="cov8" title="1">user, err, statusCode := s.GetResource(uid, ResourceParser)
+
+        if err != nil </span><span class="cov8" title="1">{
+                w.WriteHeader(statusCode)
+                w.Write([]byte(`{"error":"could not read user"}`))
+                return
+        }</span>
+
+        // Convert the user to byte data
+        <span class="cov8" title="1">respData, err := json.Marshal(user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"user data error"}`))
+                return
+        }</span>
+
+        // Write the response; no need to write the response code as 200 is the default
+        <span class="cov8" title="1">_, err = w.Write(respData)
+
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(`{"error":"unknown user error"}`))
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package users
+
+import (
+        "errors"
+        "fmt"
+        "strings"
+
+        "github.com/deelawn/convert"
+
+        "github.com/deelawn/BrainPaaswd/models"
+        "github.com/deelawn/BrainPaaswd/services"
+)
+
+const numRecordFields = 7
+
+// Service defines a user service
+type Service struct {
+        *services.Service
+}
+
+var ResourceParser = func(data string) (interface{}, int64, error) <span class="cov8" title="1">{
+
+        // Skip blank lines
+        if len(strings.TrimSpace(data)) == 0 </span><span class="cov0" title="0">{
+                return nil, -1, errors.New("empty record")
+        }</span>
+
+        <span class="cov8" title="1">fields := strings.Split(data, ":")
+
+        // Validate the number of fields in the record
+        if len(fields) != numRecordFields </span><span class="cov0" title="0">{
+                return nil, -1, errors.New("user record is malformed")
+        }</span>
+
+        // UID needs to be an integer
+        <span class="cov8" title="1">uid, uidErr := convert.StringToInt64(fields[2])
+        if uidErr != nil </span><span class="cov0" title="0">{
+                return nil, -1, fmt.Errorf("invalid uid %s : %v\n", fields[2], uidErr)
+        }</span>
+
+        // GID needs to be an integer
+        <span class="cov8" title="1">gid, gidErr := convert.StringToInt64(fields[3])
+        if gidErr != nil </span><span class="cov0" title="0">{
+                return nil, -1, fmt.Errorf("invalid gid %s : %v\n", fields[3], gidErr)
+        }</span>
+
+        <span class="cov8" title="1">newUser := models.User{
+                Name:    fields[0],
+                UID:     uid,
+                GID:     gid,
+                Comment: fields[4],
+                Home:    fields[5],
+                Shell:   fields[6],
+        }
+
+        return newUser, uid, nil</span>
+}
+
+// NewService returns a new instance of the users service
+func NewService(service *services.Service) *Service <span class="cov8" title="1">{
+
+        return &amp;Service{
+                Service: service,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package storage
+
+import (
+        "fmt"
+        "sync"
+        "time"
+)
+
+// LocalCache is a local storage mechanism that is thread safe
+type LocalCache struct {
+        mtx         *sync.RWMutex
+        data        interface{}
+        indexedData map[interface{}]interface{}
+        lastUpdated time.Time
+}
+
+// Data reads data from the cache
+func (l *LocalCache) Data() (interface{}, error) <span class="cov8" title="1">{
+
+        // TODO: to use context here to define a timeout
+        l.mtx.RLock()
+        defer l.mtx.RUnlock()
+
+        return l.data, nil
+}</span>
+
+// IndexedData tries reading and returning an indexed item using the provided key
+func (l *LocalCache) IndexedData(key interface{}) (interface{}, error) <span class="cov8" title="1">{
+
+        // TODO: to use context here to define a timeout
+        l.mtx.RLock()
+        defer l.mtx.RUnlock()
+
+        var item interface{}
+        var exists bool
+
+        if item, exists = l.indexedData[key]; !exists </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("cached item could not be found for key: %v\n", key)
+        }</span>
+
+        <span class="cov8" title="1">return item, nil</span>
+}
+
+// SetData overwrites existing cached data and updates the timestamp
+func (l *LocalCache) SetData(data interface{}, indexedData map[interface{}]interface{}) error <span class="cov8" title="1">{
+
+        // TODO: to use context here to define a timeout
+        l.mtx.Lock()
+        defer l.mtx.Unlock()
+
+        l.data = data
+        l.indexedData = indexedData
+        l.lastUpdated = time.Now()
+        return nil
+}</span>
+
+// LastUpdated returns the last updated time of the cache
+func (l *LocalCache) LastUpdated() time.Time <span class="cov8" title="1">{
+
+        return l.lastUpdated
+}</span>
+
+// Initializes a new cache instance
+func NewLocalCache() *LocalCache <span class="cov8" title="1">{
+
+        return &amp;LocalCache{
+                mtx: &amp;sync.RWMutex{},
+        }
+}</span>
+</pre>
+		
+		</div>
+	
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+
+</body></html>

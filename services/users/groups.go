@@ -25,7 +25,7 @@ func (s *Service) Groups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the user so that the name can be provided to the groups query
-	resource, err, statusCode := s.GetResource(uid, resourceParser)
+	resource, err, statusCode := s.GetResource(uid, ResourceParser)
 
 	if err != nil {
 		w.WriteHeader(statusCode)

@@ -33,6 +33,11 @@ func (g *Group) AddMember(member string) {
 // ContainsMember returns true if the group contains the provided member
 func (g *Group) ContainsMember(member string) bool {
 
+	// Handle no members case
+	if strings.TrimSpace(member) == "" && len(g.members) == 0 {
+		return true
+	}
+
 	_, exists := g.members[member]
 	return exists
 }

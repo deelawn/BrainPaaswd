@@ -18,7 +18,7 @@ type Service struct {
 	*services.Service
 }
 
-var resourceParser = func(data string) (interface{}, int64, error) {
+var ResourceParser = func(data string) (interface{}, int64, error) {
 
 	// Skip blank lines
 	if len(strings.TrimSpace(data)) == 0 {

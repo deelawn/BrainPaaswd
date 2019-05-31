@@ -63,14 +63,16 @@ func parseResponse(data []byte, target interface{}) {
 	}
 }
 
+// Initialization functions are handy
+
 func initUserService() *users.Service {
 
-	return users.NewService(services.NewService("passwd", storage.NewLocalCache(), file.NewReader))
+	return users.NewService(services.NewService("passwd", storage.NewLocalCache(), file.NewReader, users.ResourceParser))
 }
 
 func initGroupService() *groups.Service {
 
-	return groups.NewService(services.NewService("group", storage.NewLocalCache(), file.NewReader))
+	return groups.NewService(services.NewService("group", storage.NewLocalCache(), file.NewReader, groups.ResourceParser))
 }
 
 /****************************
@@ -94,10 +96,19 @@ func TestListUsers(t *testing.T) {
 		comment  string
 		home     string
 		shell    string
-		err      string
+		path     string
 	}{
-		{"full list one", 98, http.StatusOK, 10, "_ces", 32, 32, "Certificate Enrollment Service", "/var/empty", "/usr/bin/false", ""},
-		{"full list two", 98, http.StatusOK, 1, "root", 0, 0, "System Administrator", "/var/root", "/bin/sh", ""},
+		{"full list one", 98, http.StatusOK, 10, "_ces", 32, 32, "Certificate Enrollment Service", "/var/empty", "/usr/bin/false", "users"},
+		{"full list two", 98, http.StatusOK, 1, "root", 0, 0, "System Administrator", "/var/root", "/bin/sh", "users"},
+		{"found by username", 1, http.StatusOK, 0, "_jabber", 84, 84, "Jabber XMPP Server", "/var/empty", "/usr/bin/false", "users/query?name=_jabber"},
+		{"found by uid", 1, http.StatusOK, 0, "_netbios", 222, 222, "NetBIOS", "/var/empty", "/usr/bin/false", "users/query?uid=222"},
+		{"found by gid", 1, http.StatusOK, 0, "_mysql", 74, 74, "MySQL Server", "/var/empty", "/usr/bin/false", "users/query?gid=74"},
+		{"found by comment", 1, http.StatusOK, 0, "_unknown", 99, 99, "Unknown User", "/var/empty", "/usr/bin/false", "users/query?comment=Unknown%20User"},
+		{"found by home", 1, http.StatusOK, 0, "_lp", 26, 26, "Printing Services", "/var/spool/cups", "/usr/bin/false", "users/query?home=%2Fvar%2Fspool%2Fcups"},
+		{"found by shell", 95, http.StatusOK, 15, "_sandbox", 60, 60, "Seatbelt", "/var/empty", "/usr/bin/false", "users/query?shell=%2Fusr%2Fbin%2Ffalse"},
+		{"found by home and shell", 68, http.StatusOK, 6, "_mcxalr", 54, 54, "MCX AppLaunch", "/var/empty", "/usr/bin/false", "users/query?home=%2Fvar%2Fempty&shell=%2Fusr%2Fbin%2Ffalse"},
+		{"found by gid and comment", 1, http.StatusOK, 0, "_appserver", 79, 79, "Application Server", "/var/empty", "/usr/bin/false", "users/query?gid=79&comment=Application%20Server"},
+		{"not found by uid and gid", 0, http.StatusOK, 0, "", 0, 0, "", "", "", "users/query?uid=211&gid=212"},
 	}
 
 	s := initUserService()
@@ -105,15 +116,9 @@ func TestListUsers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			userList := make([]models.User, 0)
-			data, status := getTestResponse(http.MethodGet, "users", s.List, nil)
+			data, status := getTestResponse(http.MethodGet, tt.path, s.List, nil)
 
 			assert.EqualValues(t, tt.status, status)
-
-			// Don't bother checking the rest if an error is expected
-			if tt.err != "" {
-				assert.EqualValues(t, tt.err, string(data))
-				return
-			}
 
 			parseResponse(data, &userList)
 
@@ -188,9 +193,15 @@ func TestListGroups(t *testing.T) {
 		groupname string
 		gid       int64
 		members   []string
+		path      string
 	}{
-		{"full list one", 125, http.StatusOK, 83, "_lda", 211, []string{}},
-		{"full list two", 125, http.StatusOK, 45, "_www", 70, []string{"_devicemgr", "_teamsserver"}},
+		{"full list one", 125, http.StatusOK, 83, "_lda", 211, []string{}, "groups"},
+		{"full list two", 125, http.StatusOK, 45, "_www", 70, []string{"_devicemgr", "_teamsserver"}, "groups"},
+		{"found by groupname", 1, http.StatusOK, 0, "kmem", 2, []string{"root"}, "groups/query?name=kmem"},
+		{"found by gid", 1, http.StatusOK, 0, "group", 16, []string{}, "groups/query?gid=16"},
+		{"found by members", 2, http.StatusOK, 0, "certusers", 29, []string{"root", "_jabber", "_postfix", "_cyrus", "_calendar", "_dovecot"}, "groups/query?member=_jabber&member=_postfix"},
+		{"found all memberless groups", 97, http.StatusOK, 96, "com.apple.access_ssh", 399, []string{}, "groups/query?member="},
+		{"not found by gid", 0, http.StatusOK, 0, "", 0, nil, "groups/query?gid=9999"},
 	}
 
 	s := initGroupService()
@@ -198,7 +209,7 @@ func TestListGroups(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			groupList := make([]models.Group, 0)
-			data, status := getTestResponse(http.MethodGet, "groups", s.List, nil)
+			data, status := getTestResponse(http.MethodGet, tt.path, s.List, nil)
 
 			assert.EqualValues(t, tt.status, status)
 

@@ -18,7 +18,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 
 	// Retrieve the full list of users
-	resources, err, statusCode := s.GetResources(resourceParser)
+	resources, err, statusCode := s.GetResources(ResourceParser)
 
 	if err != nil {
 		w.WriteHeader(statusCode)
@@ -37,7 +37,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 
 	// If the query URI is used and query parameters exist, then apply the filters
-	if len(params) > 0 && strings.Index(r.RequestURI, "/groups/query?") == 0 {
+	if len(params) > 0 && strings.Index(r.RequestURI, "/groups/query?") != -1 {
 		groupList, err = s.filter(groupList, params)
 
 		if err != nil {
@@ -75,7 +75,7 @@ func (s *Service) filter(groupList []models.Group, params url.Values) ([]models.
 
 		if err == nil {
 			// Retrieve the group using the provided GID
-			resource, err, statusCode := s.GetResource(gid, resourceParser)
+			resource, err, statusCode := s.GetResource(gid, ResourceParser)
 
 			// Return empty list if no matching gid is found
 			if statusCode == http.StatusNotFound {

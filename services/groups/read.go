@@ -22,7 +22,7 @@ func (s *Service) Read(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve the group
-	group, err, statusCode := s.GetResource(gid, resourceParser)
+	group, err, statusCode := s.GetResource(gid, ResourceParser)
 
 	if err != nil {
 		w.WriteHeader(statusCode)

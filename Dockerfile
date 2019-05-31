@@ -5,4 +5,4 @@ WORKDIR /go/src/github.com/deelawn/BrainPaaswd
 
 COPY . .
 
-CMD go run main.go
+CMD go run main.go -passwd .data/passwd -group .data/group
