@@ -48,6 +48,11 @@ over a single loop.  In fact, both services could use the same filtering logic. 
 implement a query parsing pipeline using channels in order to concurrently filter, though the effort to achieve this
 might eclipse the minimal performance gains from filtering on such a small amount of data.
 
+#### File Sizes
+If this services needed to be able to scale to handle massive amounts of data, then some changes would need to be made,
+such as the implemention of a cache that stores selected resources while the majority of things are stored on disk; a
+SQL database would be a solution to this problem.
+
 #### Error Handling
 Errors should be defined as format string constants somewhere so that the source value and error value can be
 substituted when the error response is written to the HTTP writer.
